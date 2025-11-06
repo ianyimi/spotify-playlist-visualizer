@@ -1,0 +1,123 @@
+name: E2E Tests (Post-Deploy)
+
+on:
+  repository_dispatch:
+    types: [deployment_complete]
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "Stage name (production/dev/branch)"
+        required: true
+        type: string
+      commit:
+        description: "Commit SHA"
+        required: true
+        type: string
+      branch:
+        description: "Branch name"
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      stage:
+        description: "Stage name (production/dev/branch)"
+        required: true
+        type: string
+      commit:
+        description: "Commit SHA"
+        required: true
+        type: string
+      branch:
+        description: "Branch name"
+        required: true
+        type: string
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25 # Increased for 104 tests with 10 workers
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Determine deployment URL
+        id: deployment-url
+        run: |
+          STAGE="${{ inputs.stage }}"
+          if [ -z "$STAGE" ]; then STAGE="${{ github.event.inputs.stage }}"; fi
+          if [ -z "$STAGE" ]; then STAGE="${{ github.event.client_payload.stage }}"; fi
+
+          if [ "$STAGE" = "production" ]; then
+            DEPLOYMENT_URL="https://uifoundry.dev"
+          else
+            DEPLOYMENT_URL="https://${STAGE}.uifoundry.dev"
+          fi
+
+          COMMIT="${{ inputs.commit }}"
+          if [ -z "$COMMIT" ]; then COMMIT="${{ github.event.inputs.commit }}"; fi
+          if [ -z "$COMMIT" ]; then COMMIT="${{ github.event.client_payload.commit }}"; fi
+
+          BRANCH="${{ inputs.branch }}"
+          if [ -z "$BRANCH" ]; then BRANCH="${{ github.event.inputs.branch }}"; fi
+          if [ -z "$BRANCH" ]; then BRANCH="${{ github.event.client_payload.branch }}"; fi
+
+          echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "🚀 Testing deployment at: $DEPLOYMENT_URL"
+          echo "📋 Deployment info:"
+          echo "  Stage: $STAGE"
+          echo "  Commit: $COMMIT"
+          echo "  Branch: $BRANCH"
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run Playwright tests (all projects)
+        env:
+          NEXT_PUBLIC_BETTER_AUTH_URL: ${{ steps.deployment-url.outputs.deployment_url }}
+        run: pnpm test
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-results-${{ github.run_id }}
+          path: test-results/
+          retention-days: 30
+
+      - name: Output test results
+        if: always()
+        run: |
+          echo "## 🎭 E2E Test Results"
+          echo "**Deployment URL:** ${{ steps.deployment-url.outputs.deployment_url }}"
+          echo "**Stage:** ${{ inputs.stage || github.event.inputs.stage || github.event.client_payload.stage }}"
+          echo "**Commit:** ${{ inputs.commit || github.event.inputs.commit || github.event.client_payload.commit }}"
+          echo "**Branch:** ${{ inputs.branch || github.event.inputs.branch || github.event.client_payload.branch }}"
+          echo "**Workflow:** https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ **All E2E tests passed!**"
+          else
+            echo "❌ **Some E2E tests failed.** Check the workflow run for details."
+          fi
