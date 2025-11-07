@@ -18,9 +18,14 @@ This project uses Convex for backend functions instead of traditional REST APIs.
 - **Error Messages**: Provide clear validation error messages for client debugging
 
 ### Authentication
-- **Check Auth**: Use `authComponent.getAuthUser(ctx)` at the start of protected functions
+- **Custom Adapter with Full Integration**: This project uses a custom Better Auth adapter WITH `@convex-dev/better-auth` client plugins (see `/agent-os/standards/backend/authentication.md`)
+- **HTTP Routes**: Auth routes are registered in `~/convex/http.ts` via `httpAction`
+- **Convex Auth Works**: `ctx.auth.getUserIdentity()` works in Convex functions thanks to `convexClient()` plugin
+- **Protected Functions**: Use `ctx.auth.getUserIdentity()` or Better Auth session validation
 - **Throw Errors**: Throw descriptive errors for unauthorized access
-- **Role-Based Access**: Check user roles when needed for fine-grained permissions
+- **Role-Based Access**: Check user roles from Better Auth user data
+- **Internal API**: Auth database operations use `internal.*` imports (not `api.*`) for security
+- **Server-Side Auth**: Use `getCurrentUser()` and `getSession()` from `~/auth/server` in Next.js server components
 
 ### Error Handling
 - **Throw Errors**: Use standard Error throwing - Convex handles error serialization

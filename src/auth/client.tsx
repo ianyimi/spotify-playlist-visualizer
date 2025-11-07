@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { convexClient } from "@convex-dev/better-auth/client/plugins"
+import { convexClient } from "@convex-dev/better-auth/client/plugins";
 import { AuthUIProvider } from "@daveyplate/better-auth-ui";
 import {
 	apiKeyClient,
@@ -15,8 +15,8 @@ export const authClient = createAuthClient({
 	basePath: "/api/auth",
 	baseURL: env.NEXT_PUBLIC_BETTER_AUTH_URL,
 	plugins: [
-		convexClient(),
 		apiKeyClient(),
+		convexClient()
 	]
 })
 

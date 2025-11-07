@@ -4,7 +4,7 @@ export const COLLECTION_SLUG_USERS = "user" as const;
 export const COLLECTION_SLUG_ACCOUNTS = "account" as const;
 export const COLLECTION_SLUG_SESSIONS = "session" as const;
 export const COLLECTION_SLUG_VERIFICATIONS = "verification" as const;
-export const COLLECTION_SLUG_USER_ROLES = "user_roles" as const;
+export const COLLECTION_SLUG_JWKS = "jwks" as const;
 
 export const COLLECTION_SLUG_MEDIA = "media" as const;
 

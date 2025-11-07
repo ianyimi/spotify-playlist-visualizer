@@ -1,9 +1,8 @@
-import { authComponent } from "."
 import { query } from "../_generated/server"
 
-export const getCurrentUser = query({
+export const identifyCurrentUser = query({
 	args: {},
 	handler: async (ctx) => {
-		return authComponent.getAuthUser(ctx)
+		return ctx.auth.getUserIdentity()
 	}
 })

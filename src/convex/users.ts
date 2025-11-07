@@ -1,29 +1,18 @@
 import { v } from "convex/values";
 
-import { COLLECTION_SLUG_USER_ROLES, COLLECTION_SLUG_USERS } from "~/db/constants";
+import { COLLECTION_SLUG_SESSIONS } from "~/db/constants";
 
 import { query } from "./_generated/server";
 
-export const getCurrentUserRoles = query({
+export const getCurrentUser = query({
 	args: {
-		id: v.id(COLLECTION_SLUG_USERS)
+		token: v.string()
 	},
 	handler: async (ctx, args) => {
-		const identity = await ctx.auth.getUserIdentity();
-		if (!identity) {
-			return null
-		}
-
-		// Now get the roles from YOUR app's userRoles table
-		const userRoles = await ctx.db
-			.query(COLLECTION_SLUG_USER_ROLES)
-			.withIndex("by_userId", (q) => q.eq("userId", args.id))
-			.first()
-
-		if (!userRoles) {
-			return null
-		}
-
-		return userRoles.roles
+		const session = await ctx.db.query(COLLECTION_SLUG_SESSIONS).withIndex("by_token", (q) => q.eq("token", args.token)).first()
+		if (!session) { return null }
+		const user = await ctx.db.get(session.userId)
+		if (!user) { return null }
+		return user
 	}
 })

@@ -31,7 +31,12 @@ This is a minimal Next.js SaaS starter template. The tech stack is intentionally
 - **CI/CD:** GitHub Actions (automated workflows)
 
 ### Third-Party Services
-- **Authentication:** Better Auth 1.3.2 with @convex-dev/better-auth (Google OAuth + email/password)
+- **Authentication:** Better Auth 1.3.2 with custom Convex adapter + client plugins (Spotify OAuth)
+  - **Hybrid Approach:** Custom adapter for database + component client plugins for Convex auth integration
+  - **Database:** Custom adapter with auth tables in main schema (not component isolation)
+  - **Client Integration:** Uses `@convex-dev/better-auth` client plugins (`convexClient()`, `ConvexBetterAuthProvider`)
+  - **Benefits:** Full database control + `ctx.auth.getUserIdentity()` works + server-side session access
+  - **See:** `/agent-os/standards/backend/authentication.md` for complete architecture
 - **Email:** Not configured (add per-project)
 - **Monitoring:** Not configured (add per-project)
 

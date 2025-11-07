@@ -44,6 +44,9 @@ importers:
       convex:
         specifier: ^1.28.2
         version: 1.28.2(react@19.1.0)
+      convex-helpers:
+        specifier: ^0.1.104
+        version: 0.1.104(convex@1.28.2(react@19.1.0))(react@19.1.0)(typescript@5.8.3)(zod@4.0.5)
       graphql:
         specifier: ^16.10.0
         version: 16.10.0

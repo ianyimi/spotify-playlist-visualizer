@@ -23,18 +23,25 @@ This document reflects the actual tech stack used in this Next.js SaaS starter t
 - **Data Fetching:** Convex React hooks (useQuery, useMutation, useAction)
 - **Real-Time:** Automatic subscriptions via Convex
 - **Server-Side Data Fetching:** preloadQuery, fetchQuery, fetchMutation
-- **Authentication:** Better Auth 1.3.2 with @convex-dev/better-auth integration
+- **Authentication:** Better Auth 1.3.2 with custom Convex adapter (not using component)
 - **Validation:** Zod 4.0 (for input validation)
 
 ## Authentication
 
 - **Auth Library:** Better Auth 1.3.2
-- **Integration:** @convex-dev/better-auth for Convex integration
+- **Integration:** Hybrid approach - Custom adapter + component client plugins
+  - **Custom Adapter (Backend):** Auth tables in main schema, direct database access, full control
+  - **Component Plugins (Client):** `@convex-dev/better-auth` client plugins for Convex auth integration
+  - **Architecture:** Two-layer database operations + Convex auth token generation
+  - **Key Benefit:** Full database control + `ctx.auth.getUserIdentity()` works + server-side access
+  - **See:** `/agent-os/standards/backend/authentication.md` for complete documentation
 - **Auth Providers:**
-  - Google OAuth (configured)
-  - Email/Password (configured)
-- **Features:** Role-based access control, session management, account linking
-- **Storage:** Sessions and users stored in Convex tables
+  - Spotify OAuth (configured)
+- **Features:** Role-based access control, session management, account linking, OAuth support, Convex auth integration
+- **Storage:** All auth tables (user, account, session, verification, jwks) in main Convex schema
+- **Plugin Support:** Full Better Auth plugin ecosystem available
+- **Client Setup:** Uses `convexClient()` plugin and `ConvexBetterAuthProvider`
+- **Server Access:** `getCurrentUser()` and `getSession()` functions in `~/auth/server`
 
 ## Development & Quality
 
@@ -72,11 +79,10 @@ This document reflects the actual tech stack used in this Next.js SaaS starter t
 
 ### Database & Backend
 - convex@1.25.0+
-- @convex-dev/better-auth@latest
 
 ### Authentication
-- better-auth@1.3.2
-- @convex-dev/better-auth@latest
+- better-auth@1.3.2 (with custom Convex adapter)
+- @convex-dev/better-auth@latest (for client plugins and Next.js handler)
 
 ### UI & Styling
 - tailwindcss@4.0.15

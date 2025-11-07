@@ -16,7 +16,9 @@ Convex uses schema definitions instead of traditional models. Follow these patte
 
 ### Schema Organization
 - **Centralized Schema**: Define all tables in `src/convex/schema.ts` for consistency
+- **Auth Tables**: Authentication tables (user, account, session, verification, jwks) are defined in main schema (not component)
 - **Index Definitions**: Define indexes on frequently queried fields for performance
+- **Unique Indexes**: REQUIRED for auth unique fields (user.email, session.token, etc.) - see auth documentation
 - **Compound Indexes**: Use compound indexes for queries that filter on multiple fields
 - **Generated Types**: Let Convex auto-generate TypeScript types from your schema
 
@@ -25,3 +27,28 @@ Convex uses schema definitions instead of traditional models. Follow these patte
 - **Flexible Schema**: Convex allows schema evolution - you can add fields without migrations
 - **Appropriate Types**: Use correct Convex value types (v.id(), v.string(), v.number(), v.boolean(), etc.)
 - **Document References**: Use `v.id("tableName")` for type-safe references to other tables
+
+### Authentication Tables
+
+This project uses custom Better Auth tables in the main schema (see `/agent-os/standards/backend/authentication.md`):
+
+**Core Tables:**
+- `user` - User accounts with email, roles, OAuth profile data
+- `account` - OAuth provider accounts (linked to users)
+- `session` - Active user sessions with tokens
+- `verification` - Email/phone verification codes
+- `jwks` - JWT signing keys for OAuth/OIDC
+
+**Critical Indexes (MUST exist):**
+- `user.email` - User lookup by email
+- `accounts.userId` - Find accounts by user
+- `accounts.accountId` - OAuth account lookup
+- `session.token` - Session validation
+- `verification.identifier` - Verification lookup
+- `verification.expiresAt` - Expired verification cleanup
+
+**Important Notes:**
+- Auth tables use `v.string()` for IDs (not `v.id()`) because Better Auth manages ID generation
+- All timestamps are `v.number()` (milliseconds since epoch)
+- When adding Better Auth plugins, add required fields/indexes to schema
+- Never remove unique indexes without updating auth adapter validation logic

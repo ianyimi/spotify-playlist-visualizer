@@ -1,7 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values"
 
-import { COLLECTION_SLUG_ACCOUNTS, COLLECTION_SLUG_SESSIONS, COLLECTION_SLUG_USER_ROLES, COLLECTION_SLUG_USERS, COLLECTION_SLUG_VERIFICATIONS } from "~/db/constants";
+import { COLLECTION_SLUG_ACCOUNTS, COLLECTION_SLUG_JWKS, COLLECTION_SLUG_SESSIONS, COLLECTION_SLUG_USERS, COLLECTION_SLUG_VERIFICATIONS } from "~/db/constants";
 
 export default defineSchema({
 	// Better Auth component tables (type definitions only - actual tables are in component)
@@ -16,6 +16,7 @@ export default defineSchema({
 		isAnonymous: v.optional(v.union(v.null(), v.boolean())),
 		phoneNumber: v.optional(v.union(v.null(), v.string())),
 		phoneNumberVerified: v.optional(v.union(v.null(), v.boolean())),
+		role: v.array(v.string()),
 		twoFactorEnabled: v.optional(v.union(v.null(), v.boolean())),
 		updatedAt: v.number(),
 		userId: v.optional(v.union(v.null(), v.string())),
@@ -35,7 +36,9 @@ export default defineSchema({
 		scope: v.optional(v.string()),
 		updatedAt: v.number(),
 		userId: v.string(),
-	}),
+	})
+		.index("by_userId", ["userId"])
+		.index("by_accountId", ["accountId"]),
 
 	[COLLECTION_SLUG_SESSIONS]: defineTable({
 		createdAt: v.number(),
@@ -44,8 +47,9 @@ export default defineSchema({
 		token: v.string(),
 		updatedAt: v.number(),
 		userAgent: v.optional(v.string()),
-		userId: v.string(),
-	}),
+		userId: v.id(COLLECTION_SLUG_USERS),
+	})
+		.index("by_token", ["token"]),
 
 	[COLLECTION_SLUG_VERIFICATIONS]: defineTable({
 		identifier: v.string(),
@@ -53,12 +57,13 @@ export default defineSchema({
 		expiresAt: v.number(),
 		updatedAt: v.number(),
 		value: v.string(),
-	}),
-
-	// Your custom app table
-	[COLLECTION_SLUG_USER_ROLES]: defineTable({
-		roles: v.array(v.string()),
-		userId: v.string(), // Note: this references the component's user.id (string), not v.id()
 	})
-		.index("by_userId", ["userId"])
+		.index("by_identifier", ["identifier"])
+		.index("by_expiresAt", ["expiresAt"]),
+
+	[COLLECTION_SLUG_JWKS]: defineTable({
+		createdAt: v.number(),
+		privateKey: v.optional(v.string()),
+		publicKey: v.string(),
+	}),
 })
