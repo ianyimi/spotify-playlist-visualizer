@@ -1,17 +1,12 @@
 export * from "./auth"
 
-export const COLLECTION_SLUG_USERS = "users" as const;
-export const COLLECTION_SLUG_ACCOUNTS = "accounts" as const;
-export const COLLECTION_SLUG_SESSIONS = "sessions" as const;
-export const COLLECTION_SLUG_VERIFICATIONS = "verifications" as const;
-
-export const COLLECTION_SLUG_SITES = "sites" as const;
-export const COLLECTION_SLUG_PAGES = "pages" as const;
+export const COLLECTION_SLUG_USERS = "user" as const;
+export const COLLECTION_SLUG_ACCOUNTS = "account" as const;
+export const COLLECTION_SLUG_SESSIONS = "session" as const;
+export const COLLECTION_SLUG_VERIFICATIONS = "verification" as const;
+export const COLLECTION_SLUG_USER_ROLES = "user_roles" as const;
 
 export const COLLECTION_SLUG_MEDIA = "media" as const;
-export const COLLECTION_SLUG_THEMES = "themes" as const;
-export const COLLECTION_SLUG_HEADERS = "headers" as const;
-export const COLLECTION_SLUG_FOOTERS = "footers" as const;
 
 export const AUTH_PROVIDERS = {
 	apple: "apple",

@@ -25,11 +25,12 @@ export const env = createEnv({
 	 */
 	runtimeEnv: {
 		BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-		DATABASE_URI: process.env.DATABASE_URI,
 		NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
 		NEXT_PUBLIC_CONVEX_SITE_URL: process.env.NEXT_PUBLIC_CONVEX_SITE_URL,
 		NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
 		NODE_ENV: process.env.NODE_ENV,
+		SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID,
+		SPOTIFY_CLIENT_SECRET: process.env.SPOTIFY_CLIENT_SECRET,
 		// NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
 	},
 	/**
@@ -38,8 +39,9 @@ export const env = createEnv({
 	 */
 	server: {
 		BETTER_AUTH_SECRET: z.string(),
-		DATABASE_URI: z.string().url(),
 		NODE_ENV: z.enum(["development", "test", "production"]),
+		SPOTIFY_CLIENT_ID: z.string(),
+		SPOTIFY_CLIENT_SECRET: z.string()
 	},
 	/**
 	 * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

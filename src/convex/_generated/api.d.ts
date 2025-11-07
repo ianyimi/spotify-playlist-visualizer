@@ -11,8 +11,10 @@
 import type * as auth_api from "../auth/api.js";
 import type * as auth_config from "../auth/config.js";
 import type * as auth_index from "../auth/index.js";
-import type * as auth_plugins from "../auth/plugins.js";
+import type * as auth_plugins_index from "../auth/plugins/index.js";
+import type * as getCurrentUserRoles from "../getCurrentUserRoles.js";
 import type * as http from "../http.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -32,8 +34,10 @@ declare const fullApi: ApiFromModules<{
   "auth/api": typeof auth_api;
   "auth/config": typeof auth_config;
   "auth/index": typeof auth_index;
-  "auth/plugins": typeof auth_plugins;
+  "auth/plugins/index": typeof auth_plugins_index;
+  getCurrentUserRoles: typeof getCurrentUserRoles;
   http: typeof http;
+  users: typeof users;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
