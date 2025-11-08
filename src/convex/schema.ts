@@ -48,11 +48,13 @@ export default defineSchema({
 			v.literal("private"),
 			v.literal("collaborative")
 		),
-		images: v.array(v.object({
-			width: v.number(),
-			height: v.number(),
-			url: v.string(),
-		})),
+		images: v.union(
+			v.null(),
+			v.array(v.object({
+				width: v.union(v.number(), v.null()),
+				height: v.union(v.number(), v.null()),
+				url: v.string(),
+			}))),
 		playlistId: v.string(),
 		tracksId: v.array(v.id(TABLE_SLUG_TRACKS)),
 		userId: v.id(TABLE_SLUG_USERS)

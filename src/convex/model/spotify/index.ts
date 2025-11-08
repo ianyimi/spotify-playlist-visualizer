@@ -1,12 +1,11 @@
 import type { internal } from "~/convex/_generated/api";
-import type { ActionCtx } from "~/convex/_generated/server";
 import type { SpotifyPlaylistsResponse } from "~/lib/types";
 
 import { err } from "~/server/dal";
 
 import { spotifyFetch } from "./utils";
 
-export async function fetchAllUserPlaylists({ accessToken, ctx, playlistsCount }: { accessToken: string, ctx: ActionCtx, playlistsCount: number }) {
+export async function fetchAllUserPlaylists({ accessToken, playlistsCount }: { accessToken: string, playlistsCount: number }) {
 	const userPlaylists: typeof internal.spotify.insertPlaylists["_args"]["playlists"] = []
 	const playlistsRes = await spotifyFetch<SpotifyPlaylistsResponse>({
 		accessToken,

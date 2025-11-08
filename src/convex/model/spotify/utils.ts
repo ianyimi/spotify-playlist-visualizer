@@ -23,17 +23,15 @@ export async function getAccessToken({
 }) {
 	const account = await ctx.runQuery(internal.users.getUserAccount, { id: userId })
 	if (!account.accessToken || !account.accessTokenExpiresAt || !account.refreshToken) {
-		console.log('no access token here')
-		throw err({ message: "user account missing access or refresh token" }).error
+		throw new Error("user account missing access or refresh token")
 	}
 	if (account.accessTokenExpiresAt > Date.now()) {
-		console.log('valid api token:', account.accessTokenExpiresAt - Date.now())
 		return account.accessToken
 	}
 
 	const clientId = process.env.SPOTIFY_CLIENT_ID;
 	const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-	const response = await fetch("https:accounts.spotify.com/api/token", {
+	const response = await fetch("https://accounts.spotify.com/api/token", {
 		body: new URLSearchParams({
 			grant_type: "refresh_token",
 			refresh_token: account.refreshToken
@@ -45,14 +43,16 @@ export async function getAccessToken({
 		method: "POST"
 	})
 	if (!response.ok) {
-		throw err({ type: "spotify", message: "Failed to fetch new access token" }).error
+		const errorText = await response.text();
+		throw new Error(`Failed to fetch new access token: ${response.status} ${response.statusText} - ${errorText}`)
 	}
 	const data = await response.json() as AccessTokenResponse
 
 	await ctx.runMutation(internal.account.patchAccessToken, {
 		id: account._id,
 		accessToken: data.access_token,
-		accessTokenExpiresAt: Date.now() + data.expires_in
+		accessTokenExpiresAt: Date.now() + data.expires_in,
+		refreshToken: data.refresh_token
 	})
 
 	return data.access_token
@@ -77,7 +77,7 @@ export async function spotifyFetch<T>({
 		}
 	})
 	if (!response.ok) {
-		throw err({ type: "spotify", message: `Error fetching ${url ? "url" : "endpoint"} ${url ?? endpoint}: ${response.statusText}` }).error
+		throw new Error(`Error fetching ${url ? "url" : "endpoint"} ${url ?? endpoint}: ${response.statusText}`)
 	}
 	return (await response.json()) as T
 }

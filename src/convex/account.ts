@@ -8,12 +8,14 @@ export const patchAccessToken = internalMutation({
 	args: {
 		id: v.id(TABLE_SLUG_ACCOUNTS),
 		accessToken: v.string(),
-		accessTokenExpiresAt: v.number()
+		accessTokenExpiresAt: v.number(),
+		refreshToken: v.string(),
 	},
 	handler: async (ctx, args) => {
 		await ctx.db.patch(args.id, {
 			accessToken: args.accessToken,
 			accessTokenExpiresAt: args.accessTokenExpiresAt,
+			refreshToken: args.refreshToken
 		})
 	}
 })

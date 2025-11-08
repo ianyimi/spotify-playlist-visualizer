@@ -24,11 +24,14 @@ export const insertPlaylists = internalMutation({
 			id: v.string(),
 			name: v.string(),
 			collaborative: v.boolean(),
-			images: v.array(v.object({
-				width: v.number(),
-				height: v.number(),
-				url: v.string()
-			})),
+			images: v.union(
+				v.null(),
+				v.array(v.object({
+					width: v.union(v.null(), v.number()),
+					height: v.union(v.number(), v.null()),
+					url: v.string()
+				}))
+			),
 			public: v.boolean()
 		})),
 		userId: v.id(TABLE_SLUG_USERS)
@@ -57,7 +60,6 @@ export const countPlaylists = internalQuery({
 			.withIndex("by_userId", (q) => q.eq("userId", args.userId))
 			.paginate({ cursor: null, numItems: 150 })
 		userPlaylistCount += playlistsRes.page.length
-		console.log('user playlistsCount: ', playlistsRes)
 
 		let cursor = playlistsRes.continueCursor
 		let isDone = playlistsRes.isDone
@@ -107,14 +109,11 @@ export const getUserPlaylists = internalAction({
 			ctx,
 			userId: args.id,
 		})
-		console.log('accessToken: ', accessToken)
 		const playlistsCount = await ctx.runQuery(internal.spotify.countPlaylists, {
 			userId: args.id
 		})
-		console.log('playlistsCount: ', playlistsCount)
 		const playlists = await fetchAllUserPlaylists({
 			accessToken,
-			ctx,
 			playlistsCount
 		})
 		await ctx.runMutation(internal.spotify.insertPlaylists, {

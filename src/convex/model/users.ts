@@ -1,5 +1,5 @@
 import { TABLE_SLUG_ACCOUNTS, TABLE_SLUG_SESSIONS } from "~/db/constants";
-import { err, ok } from "~/server/dal";
+import { DAL_ERRORS, err, ok } from "~/server/dal";
 
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
@@ -8,7 +8,7 @@ export async function getAccount({ ctx, userId }: { ctx: QueryCtx, userId: strin
 		.withIndex("by_userId", (q) => q.eq("userId", userId))
 		.first()
 	if (!account) {
-		throw err({ type: "no-account" }).error
+		throw new Error(DAL_ERRORS.noAccount.message)
 	}
 	return account
 }
