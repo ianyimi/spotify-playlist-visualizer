@@ -4,7 +4,6 @@ import type { ActionCtx } from "~/convex/_generated/server";
 
 import { internal } from "~/convex/_generated/api";
 import { type TABLE_SLUG_USERS } from "~/db/constants";
-import { err } from "~/server/dal";
 
 type AccessTokenResponse = {
 	access_token: string,

@@ -1,8 +1,6 @@
 import type { internal } from "~/convex/_generated/api";
 import type { SpotifyPlaylistsResponse } from "~/lib/types";
 
-import { err } from "~/server/dal";
-
 import { spotifyFetch } from "./utils";
 
 export async function fetchAllUserPlaylists({ accessToken, playlistsCount }: { accessToken: string, playlistsCount: number }) {
@@ -13,7 +11,8 @@ export async function fetchAllUserPlaylists({ accessToken, playlistsCount }: { a
 	})
 	const total = playlistsRes.total
 	if (total <= playlistsCount) {
-		throw err({ message: "Query up to date" }).error
+		console.warn("Playlist info up to date")
+		return []
 	}
 	const limit = playlistsRes.limit
 	for (const playlist of playlistsRes.items) {
