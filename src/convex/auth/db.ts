@@ -53,6 +53,7 @@ export const dbFindOne = internalQuery({
 	},
 	handler: async (ctx, { betterAuthSchema, model, select, where }) => {
 		const authSchema = getBetterAuthSchema(betterAuthSchema);
+		// @ts-expect-error GenericCtx type is a superset
 		const result = await listOne(ctx, schema, authSchema, {
 			model,
 			select,
@@ -83,6 +84,7 @@ export const dbFindMany = internalQuery({
 		if (parsedWhere.some((w) => w.connector === "OR")) {
 			const results = await Promise.all(
 				parsedWhere.map(async (w) => {
+					// @ts-expect-error GenericCtx type is a superset
 					const result = await paginate(ctx, schema, authSchema, {
 						model,
 						paginationOpts: { cursor: null, numItems: limit ?? 200 },
@@ -121,6 +123,7 @@ export const dbFindMany = internalQuery({
 		}
 
 		// Normal case without OR
+		// @ts-expect-error GenericCtx type is a superset
 		const result = await paginate(ctx, schema, authSchema, {
 			model,
 			paginationOpts: { cursor: null, numItems: limit ?? 200 },
@@ -147,6 +150,7 @@ export const dbCount = internalQuery({
 		if (parsedWhere.some((w) => w.connector === "OR")) {
 			const results = await Promise.all(
 				parsedWhere.map(async (w) => {
+					// @ts-expect-error GenericCtx type is a superset
 					const result = await paginate(ctx, schema, authSchema, {
 						model,
 						paginationOpts: { cursor: null, numItems: 200 },
@@ -168,6 +172,7 @@ export const dbCount = internalQuery({
 		}
 
 		// Normal case
+		// @ts-expect-error GenericCtx type is a superset
 		const result = await paginate(ctx, schema, authSchema, {
 			model,
 			paginationOpts: { cursor: null, numItems: 200 },
