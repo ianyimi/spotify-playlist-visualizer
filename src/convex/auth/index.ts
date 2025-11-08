@@ -3,10 +3,10 @@ import type { GenericActionCtx } from "convex/server"
 import { betterAuth } from "better-auth"
 
 import {
-	COLLECTION_SLUG_ACCOUNTS,
-	COLLECTION_SLUG_SESSIONS,
-	COLLECTION_SLUG_USERS,
-	COLLECTION_SLUG_VERIFICATIONS,
+	TABLE_SLUG_ACCOUNTS,
+	TABLE_SLUG_SESSIONS,
+	TABLE_SLUG_USERS,
+	TABLE_SLUG_VERIFICATIONS,
 	USER_ROLES,
 } from "~/db/constants"
 
@@ -26,11 +26,15 @@ export const createAuth = (
 				clientId: process.env.SPOTIFY_CLIENT_ID!,
 				clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
 				redirectURI: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/auth/callback/spotify`,
-				scope: ["playlist-read-private"]
+				scope: [
+					"playlist-read-private",
+					"playlist-read-collaborative",
+					"user-library-read"
+				]
 			},
 		},
 		account: {
-			modelName: COLLECTION_SLUG_ACCOUNTS
+			modelName: TABLE_SLUG_ACCOUNTS
 		},
 		advanced: {
 			generateId: false,
@@ -46,21 +50,26 @@ export const createAuth = (
 		plugins: betterAuthPlugins,
 		secret: process.env.BETTER_AUTH_SECRET,
 		session: {
-			modelName: COLLECTION_SLUG_SESSIONS
+			modelName: TABLE_SLUG_SESSIONS
 		},
 		trustedOrigins: ["http://localhost:3001", "http://127.0.0.1:3001"],
 		user: {
 			additionalFields: {
+				playlistIds: {
+					type: "string[]",
+					defaultValue: [],
+					required: true
+				},
 				role: {
 					type: "string[]",
 					defaultValue: [USER_ROLES.user],
 					required: true
 				}
 			},
-			modelName: COLLECTION_SLUG_USERS
+			modelName: TABLE_SLUG_USERS
 		},
 		verification: {
-			modelName: COLLECTION_SLUG_VERIFICATIONS
+			modelName: TABLE_SLUG_VERIFICATIONS
 		}
 	})
 }

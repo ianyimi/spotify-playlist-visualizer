@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 
-import { COLLECTION_SLUG_SESSIONS, type COLLECTION_SLUG_USERS } from "~/db/constants";
+import { TABLE_SLUG_SESSIONS, type TABLE_SLUG_USERS } from "~/db/constants";
 
 import type { Id } from "../_generated/dataModel";
 
@@ -17,7 +17,7 @@ export const getSessionWithUser = query({
 	handler: async (ctx, args) => {
 		// Find the session by token
 		const session = await ctx.db
-			.query(COLLECTION_SLUG_SESSIONS)
+			.query(TABLE_SLUG_SESSIONS)
 			.withIndex("by_token", (q) => q.eq("token", args.sessionToken))
 			.first();
 
@@ -32,7 +32,7 @@ export const getSessionWithUser = query({
 		}
 
 		// Get the user data
-		const user = await ctx.db.get(session.userId as Id<typeof COLLECTION_SLUG_USERS>);
+		const user = await ctx.db.get(session.userId as Id<typeof TABLE_SLUG_USERS>);
 
 		if (!user) {
 			return null;

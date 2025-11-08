@@ -10,7 +10,7 @@ import { v } from "convex/values";
 
 import type { WhereClause } from "./adapter/utils";
 
-import { mutation, query } from "../_generated/server";
+import { internalMutation, internalQuery } from "../_generated/server";
 import schema from "../schema";
 import { checkUniqueFields, listOne, paginate, selectFields } from "./adapter/utils";
 
@@ -20,7 +20,7 @@ const getBetterAuthSchema = (schemaJson: string): BetterAuthDbSchema => {
 };
 
 // Create (insert) operation
-export const dbCreate = mutation({
+export const dbCreate = internalMutation({
 	args: {
 		betterAuthSchema: v.string(),
 		data: v.any(),
@@ -44,7 +44,7 @@ export const dbCreate = mutation({
 });
 
 // Find one operation
-export const dbFindOne = query({
+export const dbFindOne = internalQuery({
 	args: {
 		betterAuthSchema: v.string(),
 		model: v.string(),
@@ -53,7 +53,6 @@ export const dbFindOne = query({
 	},
 	handler: async (ctx, { betterAuthSchema, model, select, where }) => {
 		const authSchema = getBetterAuthSchema(betterAuthSchema);
-		// @ts-expect-error - Convex query context type (specific DataModel) incompatible with generic GenericDataModel parameter
 		const result = await listOne(ctx, schema, authSchema, {
 			model,
 			select,
@@ -65,7 +64,7 @@ export const dbFindOne = query({
 });
 
 // Find many operation
-export const dbFindMany = query({
+export const dbFindMany = internalQuery({
 	args: {
 		betterAuthSchema: v.string(),
 		limit: v.optional(v.number()),
@@ -84,7 +83,6 @@ export const dbFindMany = query({
 		if (parsedWhere.some((w) => w.connector === "OR")) {
 			const results = await Promise.all(
 				parsedWhere.map(async (w) => {
-					// @ts-expect-error - Convex query context type (specific DataModel) incompatible with generic GenericDataModel parameter
 					const result = await paginate(ctx, schema, authSchema, {
 						model,
 						paginationOpts: { cursor: null, numItems: limit ?? 200 },
@@ -123,7 +121,6 @@ export const dbFindMany = query({
 		}
 
 		// Normal case without OR
-		// @ts-expect-error - Convex query context type (specific DataModel) incompatible with generic GenericDataModel parameter
 		const result = await paginate(ctx, schema, authSchema, {
 			model,
 			paginationOpts: { cursor: null, numItems: limit ?? 200 },
@@ -136,7 +133,7 @@ export const dbFindMany = query({
 });
 
 // Count operation
-export const dbCount = query({
+export const dbCount = internalQuery({
 	args: {
 		betterAuthSchema: v.string(),
 		model: v.string(),
@@ -150,7 +147,6 @@ export const dbCount = query({
 		if (parsedWhere.some((w) => w.connector === "OR")) {
 			const results = await Promise.all(
 				parsedWhere.map(async (w) => {
-					// @ts-expect-error - Convex query context type (specific DataModel) incompatible with generic GenericDataModel parameter
 					const result = await paginate(ctx, schema, authSchema, {
 						model,
 						paginationOpts: { cursor: null, numItems: 200 },
@@ -172,7 +168,6 @@ export const dbCount = query({
 		}
 
 		// Normal case
-		// @ts-expect-error - Convex query context type (specific DataModel) incompatible with generic GenericDataModel parameter
 		const result = await paginate(ctx, schema, authSchema, {
 			model,
 			paginationOpts: { cursor: null, numItems: 200 },
@@ -184,7 +179,7 @@ export const dbCount = query({
 });
 
 // Update operation
-export const dbUpdate = mutation({
+export const dbUpdate = internalMutation({
 	args: {
 		betterAuthSchema: v.string(),
 		model: v.string(),
@@ -214,7 +209,7 @@ export const dbUpdate = mutation({
 });
 
 // Update many operation
-export const dbUpdateMany = mutation({
+export const dbUpdateMany = internalMutation({
 	args: {
 		betterAuthSchema: v.string(),
 		model: v.string(),
@@ -254,7 +249,7 @@ export const dbUpdateMany = mutation({
 });
 
 // Delete operation
-export const dbDelete = mutation({
+export const dbDelete = internalMutation({
 	args: {
 		betterAuthSchema: v.string(),
 		model: v.string(),
@@ -278,7 +273,7 @@ export const dbDelete = mutation({
 });
 
 // Delete many operation
-export const dbDeleteMany = mutation({
+export const dbDeleteMany = internalMutation({
 	args: {
 		betterAuthSchema: v.string(),
 		model: v.string(),

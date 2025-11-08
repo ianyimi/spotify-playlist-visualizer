@@ -305,15 +305,15 @@ All auth tables are defined in `~/convex/schema.ts`:
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
-  COLLECTION_SLUG_USERS,
-  COLLECTION_SLUG_ACCOUNTS,
-  COLLECTION_SLUG_SESSIONS,
-  COLLECTION_SLUG_VERIFICATIONS,
-  COLLECTION_SLUG_JWKS,
+  TABLE_SLUG_USERS,
+  TABLE_SLUG_ACCOUNTS,
+  TABLE_SLUG_SESSIONS,
+  TABLE_SLUG_VERIFICATIONS,
+  TABLE_SLUG_JWKS,
 } from "~/db/constants";
 
 export default defineSchema({
-  [COLLECTION_SLUG_USERS]: defineTable({
+  [TABLE_SLUG_USERS]: defineTable({
     name: v.string(),
     email: v.string(),
     emailVerified: v.boolean(),
@@ -324,7 +324,7 @@ export default defineSchema({
     // ... other fields
   }).index("by_email", ["email"]),
 
-  [COLLECTION_SLUG_ACCOUNTS]: defineTable({
+  [TABLE_SLUG_ACCOUNTS]: defineTable({
     userId: v.string(),
     accountId: v.string(),
     providerId: v.string(),
@@ -336,14 +336,14 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_accountId", ["accountId"]),
 
-  [COLLECTION_SLUG_SESSIONS]: defineTable({
+  [TABLE_SLUG_SESSIONS]: defineTable({
     userId: v.string(),
     token: v.string(),
     expiresAt: v.number(),
     // ... other fields
   }).index("by_token", ["token"]),
 
-  [COLLECTION_SLUG_VERIFICATIONS]: defineTable({
+  [TABLE_SLUG_VERIFICATIONS]: defineTable({
     identifier: v.string(),
     value: v.string(),
     expiresAt: v.number(),
@@ -352,7 +352,7 @@ export default defineSchema({
     .index("by_identifier", ["identifier"])
     .index("by_expiresAt", ["expiresAt"]),
 
-  [COLLECTION_SLUG_JWKS]: defineTable({
+  [TABLE_SLUG_JWKS]: defineTable({
     publicKey: v.string(),
     privateKey: v.optional(v.string()),
     createdAt: v.number(),
@@ -638,7 +638,7 @@ export const getSessionWithUser = query({
   args: { sessionToken: v.string() },
   handler: async (ctx, args) => {
     const session = await ctx.db
-      .query(COLLECTION_SLUG_SESSIONS)
+      .query(TABLE_SLUG_SESSIONS)
       .withIndex("by_token", (q) => q.eq("token", args.sessionToken))
       .first();
 

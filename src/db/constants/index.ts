@@ -1,10 +1,15 @@
 export * from "./auth"
 
-export const COLLECTION_SLUG_USERS = "user" as const;
-export const COLLECTION_SLUG_ACCOUNTS = "account" as const;
-export const COLLECTION_SLUG_SESSIONS = "session" as const;
-export const COLLECTION_SLUG_VERIFICATIONS = "verification" as const;
-export const COLLECTION_SLUG_JWKS = "jwks" as const;
+// Better Auth
+export const TABLE_SLUG_USERS = "user" as const;
+export const TABLE_SLUG_ACCOUNTS = "account" as const;
+export const TABLE_SLUG_SESSIONS = "session" as const;
+export const TABLE_SLUG_VERIFICATIONS = "verification" as const;
+export const TABLE_SLUG_JWKS = "jwks" as const;
+
+// Spotify
+export const TABLE_SLUG_PLAYLISTS = "playlists"
+export const TABLE_SLUG_TRACKS = "tracks"
 
 export const COLLECTION_SLUG_MEDIA = "media" as const;
 

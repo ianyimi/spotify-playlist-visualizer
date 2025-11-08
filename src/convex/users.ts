@@ -1,18 +1,22 @@
 import { v } from "convex/values";
 
-import { COLLECTION_SLUG_SESSIONS } from "~/db/constants";
+import { TABLE_SLUG_USERS } from "~/db/constants";
 
-import { query } from "./_generated/server";
+import { internalQuery, query } from "./_generated/server";
+import { getAccount, getCurrentUser } from "./model/users"
 
-export const getCurrentUser = query({
+export const getUser = query({
 	args: {
 		token: v.string()
 	},
 	handler: async (ctx, args) => {
-		const session = await ctx.db.query(COLLECTION_SLUG_SESSIONS).withIndex("by_token", (q) => q.eq("token", args.token)).first()
-		if (!session) { return null }
-		const user = await ctx.db.get(session.userId)
-		if (!user) { return null }
-		return user
+		return await getCurrentUser({ ctx, token: args.token })
+	}
+})
+
+export const getUserAccount = internalQuery({
+	args: { id: v.id(TABLE_SLUG_USERS) },
+	handler: async (ctx, args) => {
+		return await getAccount({ ctx, userId: args.id })
 	}
 })

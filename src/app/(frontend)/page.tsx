@@ -1,6 +1,6 @@
 import HomeComponent from "~/components/Home"
 
-export default async function Home() {
+export default function Home() {
 	return (
 		<HomeComponent />
 	);

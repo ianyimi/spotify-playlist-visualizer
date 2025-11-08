@@ -1,6 +1,5 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Where } from "better-auth/types";
@@ -53,7 +52,6 @@ export const convexAdapter = <DataModel extends GenericDataModel>(
 				id: "convex",
 
 				create: async ({ data, model, select }): Promise<any> => {
-					// @ts-expect-error - Internal API
 					return await ctx.runMutation(internal.auth.db.dbCreate, {
 						betterAuthSchema: betterAuthSchemaJson,
 						data,
@@ -65,7 +63,6 @@ export const convexAdapter = <DataModel extends GenericDataModel>(
 				findOne: async ({ model, select, where }): Promise<any> => {
 					const parsedWhere = parseWhere(where);
 
-					// @ts-expect-error - Internal API
 					return await ctx.runQuery(internal.auth.db.dbFindOne, {
 						betterAuthSchema: betterAuthSchemaJson,
 						model,
@@ -81,7 +78,6 @@ export const convexAdapter = <DataModel extends GenericDataModel>(
 
 					const parsedWhere = parseWhere(where);
 
-					// @ts-expect-error - Internal API
 					return await ctx.runQuery(internal.auth.db.dbFindMany, {
 						betterAuthSchema: betterAuthSchemaJson,
 						limit,
@@ -94,7 +90,6 @@ export const convexAdapter = <DataModel extends GenericDataModel>(
 				count: async ({ model, where }): Promise<number> => {
 					const parsedWhere = parseWhere(where);
 
-					// @ts-expect-error - Internal API
 					return await ctx.runQuery(internal.auth.db.dbCount, {
 						betterAuthSchema: betterAuthSchemaJson,
 						model,
@@ -105,7 +100,6 @@ export const convexAdapter = <DataModel extends GenericDataModel>(
 				update: async ({ model, update, where }): Promise<any> => {
 					const parsedWhere = parseWhere(where);
 
-					// @ts-expect-error - Internal API
 					return await ctx.runMutation(internal.auth.db.dbUpdate, {
 						betterAuthSchema: betterAuthSchemaJson,
 						model,
@@ -117,7 +111,6 @@ export const convexAdapter = <DataModel extends GenericDataModel>(
 				updateMany: async ({ model, update, where }): Promise<number> => {
 					const parsedWhere = parseWhere(where);
 
-					// @ts-expect-error - Internal API
 					return await ctx.runMutation(internal.auth.db.dbUpdateMany, {
 						betterAuthSchema: betterAuthSchemaJson,
 						model,
@@ -129,7 +122,6 @@ export const convexAdapter = <DataModel extends GenericDataModel>(
 				delete: async ({ model, where }): Promise<void> => {
 					const parsedWhere = parseWhere(where);
 
-					// @ts-expect-error - Internal API
 					await ctx.runMutation(internal.auth.db.dbDelete, {
 						betterAuthSchema: betterAuthSchemaJson,
 						model,
@@ -140,7 +132,6 @@ export const convexAdapter = <DataModel extends GenericDataModel>(
 				deleteMany: async ({ model, where }): Promise<number> => {
 					const parsedWhere = parseWhere(where);
 
-					// @ts-expect-error - Internal API
 					return await ctx.runMutation(internal.auth.db.dbDeleteMany, {
 						betterAuthSchema: betterAuthSchemaJson,
 						model,

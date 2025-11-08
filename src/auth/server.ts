@@ -33,7 +33,6 @@ export const getCurrentUser = async () => {
 export async function getSession() {
 	try {
 		const sessionToken = await getSessionToken()
-		console.log('cookie session token: ', sessionToken)
 
 		if (!sessionToken) {
 			console.log('no session token')
