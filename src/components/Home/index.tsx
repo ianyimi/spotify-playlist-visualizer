@@ -1,8 +1,6 @@
 "use client"
 
-import { convexQuery } from "@convex-dev/react-query";
-import { useQuery } from "@tanstack/react-query";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -15,11 +13,8 @@ import { api } from "~/convex/_generated/api";
 export default function Home() {
 	const { data: session, isPending } = useSession()
 	const userId = session?.user?.id as undefined | UserID
+	const userPlaylists = useQuery(api.spotify.readPlaylists, userId ? { userId } : "skip")
 
-	const { data: userPlaylists } = useQuery({
-		...convexQuery(api.spotify.readPlaylists, { userId: userId! }),
-		enabled: !!userId
-	})
 	const refreshPlaylistsMutation = useMutation(api.spotify.refreshPlaylists)
 
 	useEffect(() => {
