@@ -25,7 +25,8 @@ export const createAuth = (
 			spotify: {
 				clientId: process.env.SPOTIFY_CLIENT_ID!,
 				clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-				redirectURI: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/auth/callback/spotify`
+				redirectURI: `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/auth/callback/spotify`,
+				scope: ["playlist-read-private"]
 			},
 		},
 		account: {
