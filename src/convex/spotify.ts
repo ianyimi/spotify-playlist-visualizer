@@ -112,14 +112,16 @@ export const getUserPlaylists = internalAction({
 		const playlistsCount = await ctx.runQuery(internal.spotify.countPlaylists, {
 			userId: args.id
 		})
-		const playlists = await fetchAllUserPlaylists({
+		const newPlaylists = await fetchAllUserPlaylists({
 			accessToken,
 			playlistsCount
 		})
-		await ctx.runMutation(internal.spotify.insertPlaylists, {
-			playlists,
-			userId: args.id
-		})
+		if (newPlaylists.length > 0) {
+			await ctx.runMutation(internal.spotify.insertPlaylists, {
+				playlists: newPlaylists,
+				userId: args.id
+			})
+		}
 	}
 })
 
