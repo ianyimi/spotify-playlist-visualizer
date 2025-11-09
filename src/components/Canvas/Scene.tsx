@@ -1,6 +1,6 @@
 "use client"
 
-import { AdaptiveDpr, Box, Bvh, useProgress } from "@react-three/drei"
+import { AdaptiveDpr, Bvh, useProgress } from "@react-three/drei"
 import { Canvas, extend } from "@react-three/fiber"
 import { useEffect, useState } from "react"
 import * as THREE from "three"
@@ -20,9 +20,9 @@ try {
 	// Import and extend TextGeometry if available
 	import("three-stdlib")
 		.then((threeStdlib) => {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
 			if (threeStdlib.TextGeometry) {
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+
 				extend({ TextGeometry: threeStdlib.TextGeometry })
 			}
 		})
@@ -45,6 +45,7 @@ interface SceneProps {
 
 export default function Scene({ onProgressChange, onSceneReady }: SceneProps) {
 	const [mounted, setMounted] = useState(false)
+	const [hover, setHover] = useState(false)
 
 	useEffect(() => {
 		setMounted(true)
@@ -101,9 +102,9 @@ export default function Scene({ onProgressChange, onSceneReady }: SceneProps) {
 				{/* <About /> */}
 				<ambientLight intensity={0.5} />
 				<directionalLight intensity={1} position={[10, 10, 5]} />
-				<mesh>
+				<mesh onPointerEnter={() => setHover(true)} onPointerLeave={() => setHover(false)}>
 					<boxGeometry args={[2, 2, 2]} />
-					<meshStandardMaterial color="#ff0000" />
+					<meshStandardMaterial color={hover ? "#ffff00" : "#ff0000"} />
 				</mesh>
 				<AdaptiveDpr />
 			</Bvh>
