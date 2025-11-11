@@ -1,13 +1,14 @@
 "use client"
 
 import { Loader2Icon, LogIn, LogOut } from "lucide-react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 
-import { useSession } from "~/auth/client"
+import { signOut, useSession } from "~/auth/client"
 import { Button } from '~/ui/button'
 
 export default function SignInButton({ loading }: { loading: boolean }) {
 	const { data: session } = useSession()
+	const router = useRouter()
 
 	if (loading) {
 		return (
@@ -18,18 +19,31 @@ export default function SignInButton({ loading }: { loading: boolean }) {
 		)
 	}
 
-	return (
-		<Link href={session ? "/auth/sign-out" : "/auth/sign-in"}>
-			<Button className="justify-between cursor-pointer gap-2" variant="default">
-				{!session ? (
-					<LogOut size={20} />
-				) : (
-					<LogIn size={20} />
-				)
+	async function handleAuth() {
+		if (!session) {
+			router.push("/auth/sign-in")
+		} else {
+			await signOut({
+				fetchOptions: {
+					onSuccess: () => {
+						router.push("/")
+						router.refresh()
+					}
 				}
-				<span>{session ? 'Sign Out' : 'Sign In'}</span>
-			</Button>
-		</Link>
+			})
+		}
+	}
+
+	return (
+		<Button className="justify-between cursor-pointer gap-2" onClick={handleAuth} variant="default">
+			{!session ? (
+				<LogOut size={20} />
+			) : (
+				<LogIn size={20} />
+			)
+			}
+			<span>{session ? 'Sign Out' : 'Sign In'}</span>
+		</Button>
 	)
 }
 
