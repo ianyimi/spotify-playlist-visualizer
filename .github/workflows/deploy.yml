@@ -98,6 +98,12 @@ jobs:
           aws-region: us-west-1
           role-session-name: GitHubActionsSSTProd
 
+      - name: Convex Deploy (prod)
+        if: ${{ steps.determine-stage.outputs.stage == 'production' }}
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: pnpx convex deploy
+
       - name: Deploy (dev)
         if: ${{ steps.determine-stage.outputs.stage == 'dev' }}
         env:
