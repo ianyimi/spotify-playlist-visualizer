@@ -80,9 +80,12 @@ export default $config({
 			],
 			environment: {
 				// NODE_ENV: process.env.NODE_ENV,
-				// NEXT_PUBLIC_BETTER_AUTH_URL: NEXT_PUBLIC_BETTER_AUTH_URL.value,
-				// BETTER_AUTH_SECRET: BETTER_AUTH_SECRET.value,
-
+				NEXT_PUBLIC_BETTER_AUTH_URL: NEXT_PUBLIC_BETTER_AUTH_URL.value,
+				NEXT_PUBLIC_CONVEX_URL: NEXT_PUBLIC_CONVEX_URL.value,
+				NEXT_PUBLIC_CONVEX_SITE_URL: NEXT_PUBLIC_CONVEX_SITE_URL.value,
+				BETTER_AUTH_SECRET: BETTER_AUTH_SECRET.value,
+				SPOTIFY_CLIENT_ID: SPOTIFY_CLIENT_ID.value,
+				SPOTIFY_CLIENT_SECRET: SPOTIFY_CLIENT_SECRET.value,
 				// Build time for deployment verification
 				BUILD_TIME: new Date().toISOString(),
 			},
