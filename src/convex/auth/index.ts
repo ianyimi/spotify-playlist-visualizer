@@ -52,7 +52,7 @@ export const createAuth = (
 		session: {
 			modelName: TABLE_SLUG_SESSIONS
 		},
-		trustedOrigins: ["http://localhost:3001", "http://127.0.0.1:3001"],
+		trustedOrigins: [process.env.NEXT_PUBLIC_BETTER_AUTH_URL!],
 		user: {
 			additionalFields: {
 				playlistIds: {
