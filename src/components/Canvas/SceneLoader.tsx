@@ -1,6 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import { usePathname } from "next/navigation"
 import { lazy, Suspense, useEffect, useState } from "react"
 
 import { $sceneStore } from "~/stores/scene"
@@ -21,6 +22,7 @@ export default function SceneLoader() {
 	const [progress, setProgress] = useState(0)
 	const [_loaded, setLoaded] = useState(0)
 	const [total, setTotal] = useState(0)
+	const pathname = usePathname()
 
 	// Show scene when Canvas is created AND all 3D assets are loaded
 	// useProgress tracks Three.js assets (textures, models) NOT external API calls
@@ -35,6 +37,10 @@ export default function SceneLoader() {
 			}
 		}
 	}, [sceneCreated, showScene, progress, total])
+
+	if (["/auth/sign-in", "/auth/sign-up"].includes(pathname)) {
+		return null
+	}
 
 	return (
 		<div className="h-full w-full">
