@@ -1,6 +1,6 @@
-import { authViewPaths } from "@daveyplate/better-auth-ui/server";
-
 import AuthView from "./view";
+
+export const dynamic = 'force-dynamic';
 
 export default async function AuthPage({
 	params,
@@ -10,8 +10,4 @@ export default async function AuthPage({
 	const { pathname } = await params;
 
 	return <AuthView pathname={pathname} />;
-}
-
-export function generateStaticParams() {
-	return Object.values(authViewPaths).map((pathname) => ({ pathname }));
 }
