@@ -6,10 +6,8 @@ import { useEffect, useState } from "react"
 import * as THREE from "three"
 import { Vector3 } from "three"
 
-// import About from "./About"
 import CameraShake from "./CameraShake"
-// import Experience from "./Experience"
-// import Landing from "./Landing"
+import Playlists from "./Playlists"
 
 // Extend THREE with necessary geometries - this fixes Text3D issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,7 +28,7 @@ try {
 			// Fallback - drei should handle this automatically
 			console.warn("Using drei automatic extend for TextGeometry")
 		})
-} catch (e) {
+} catch (_e) {
 	// Silent fallback
 }
 
@@ -97,9 +95,7 @@ export default function Scene({ onProgressChange, onSceneReady }: SceneProps) {
 			<Bvh>
 				<ProgressBridge onChange={onProgressChange} />
 				<CameraShake />
-				{/* <Landing /> */}
-				{/* <Experience /> */}
-				{/* <About /> */}
+				<Playlists />
 				<ambientLight intensity={0.5} />
 				<directionalLight intensity={1} position={[10, 10, 5]} />
 				<mesh onPointerEnter={() => setHover(true)} onPointerLeave={() => setHover(false)}>

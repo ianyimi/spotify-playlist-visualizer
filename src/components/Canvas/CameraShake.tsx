@@ -45,6 +45,7 @@ export default function CameraShake({ dragControls = false, shakiness = 1 }: { d
 
 		};
 
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	return dragControls ? <OrbitControls /> : <></>;

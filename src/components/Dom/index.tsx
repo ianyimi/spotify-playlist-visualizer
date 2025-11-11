@@ -14,20 +14,20 @@ export default observer(function Dom({ children }: DomProps) {
 
 	return (
 		<div
-			id="domContent"
 			className="relative w-screen h-screen overflow-y-scroll"
+			id="domContent"
 			style={{
-				zIndex: 10,
-				pointerEvents: "auto"
+				pointerEvents: "auto",
+				zIndex: 10
 			}}
 		>
 			<div
-				id="wrapper"
 				className={`overflow-x-hidden min-w-full min-h-full transition-opacity duration-500 ${
 					sceneReady ? "opacity-100" : "opacity-0 pointer-events-none"
 				}`}
+				id="wrapper"
 			>
-				<div id="content" className="relative min-h-screen">
+				<div className="relative min-h-screen" id="content">
 					{children}
 				</div>
 			</div>

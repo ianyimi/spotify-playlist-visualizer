@@ -19,7 +19,7 @@ export default function SceneLoader() {
 	const [showScene, setShowScene] = useState(false)
 	const [sceneCreated, setSceneCreated] = useState(false)
 	const [progress, setProgress] = useState(0)
-	const [loaded, setLoaded] = useState(0)
+	const [_loaded, setLoaded] = useState(0)
 	const [total, setTotal] = useState(0)
 
 	// Show scene when Canvas is created AND all 3D assets are loaded

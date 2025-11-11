@@ -30,7 +30,6 @@ export default function Home() {
 
 	useEffect(() => {
 		if (!userPlaylists || userPlaylists.length < 1) { return }
-		console.log('playlists: ', userPlaylists)
 		$spotifyStore.userPlaylists.set(userPlaylists)
 	}, [userPlaylists])
 
