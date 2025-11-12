@@ -29,7 +29,7 @@ const ROW_LENGTH = 10;
 
 export default function InstancedVintageTelevision({ ...groupProps }: Partial<InstancesProps>) {
 	const playlists = useValue($spotifyStore.userPlaylists)
-	const { materials, nodes } = useGLTF(`staging/vintageTelevision.glb`) as unknown as GLTFResult
+	const { materials, nodes } = useGLTF(`tv.glb`) as unknown as GLTFResult
 	const centerX = ROW_LENGTH * GAPX / 2
 	const maxRows = Math.floor(playlists.length / ROW_LENGTH)
 	const centerY = maxRows * GAPY / 2
