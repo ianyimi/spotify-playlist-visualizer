@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic"
 import { usePathname } from "next/navigation"
-import { lazy, Suspense, useEffect, useState } from "react"
+import { lazy, Suspense, useState } from "react"
 
 import { $sceneStore } from "~/stores/scene"
 // Do not use drei hooks outside Canvas
@@ -18,25 +18,8 @@ const LoadingLogo = dynamic(() => import("~/components/common/LoadingLogo"), {
 
 export default function SceneLoader() {
 	const [showScene, setShowScene] = useState(false)
-	const [sceneCreated, setSceneCreated] = useState(false)
 	const [progress, setProgress] = useState(0)
-	const [_loaded, setLoaded] = useState(0)
-	const [total, setTotal] = useState(0)
 	const pathname = usePathname()
-
-	// Show scene when Canvas is created AND all 3D assets are loaded
-	// useProgress tracks Three.js assets (textures, models) NOT external API calls
-	// So waiting for progress === 100 is safe - Spotify API calls won't block this
-	// If there are no assets to load (total === 0), show immediately when scene is created
-	useEffect(() => {
-		if (sceneCreated && !showScene) {
-			// If no assets to load (total === 0) OR all assets loaded (progress === 100)
-			if (total === 0 || progress === 100) {
-				setShowScene(true)
-				$sceneStore.sceneReady.set(true)
-			}
-		}
-	}, [sceneCreated, showScene, progress, total])
 
 	if (["/auth/sign-in", "/auth/sign-up"].includes(pathname)) {
 		return null
@@ -44,7 +27,7 @@ export default function SceneLoader() {
 
 	return (
 		<div className="h-full w-full">
-			<DreiLoadingScreen progress={total === 0 ? 100 : progress} visible={!showScene} />
+			<DreiLoadingScreen progress={progress} visible={!showScene} />
 
 			<div
 				className={`fixed inset-0 transition-opacity duration-500 ${showScene ? "opacity-100" : "opacity-0"}`}
@@ -52,12 +35,15 @@ export default function SceneLoader() {
 			>
 				<Suspense fallback={null}>
 					<Scene
-						onProgressChange={({ loaded: l, progress: p, total: t }) => {
+						onProgressChange={({ progress: p }) => {
 							setProgress(p)
-							setLoaded(l)
-							setTotal(t)
+							if (progress === 100) {
+								setTimeout(() => {
+									setShowScene(true)
+									$sceneStore.sceneReady.set(true)
+								}, 500)
+							}
 						}}
-						onSceneReady={() => setSceneCreated(true)}
 					/>
 				</Suspense>
 			</div>

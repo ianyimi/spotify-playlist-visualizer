@@ -3,6 +3,8 @@ import { useEffect } from "react"
 
 import { $spotifyStore } from "~/stores/spotify"
 
+import TVInstances from "./TVInstances"
+
 export default function Playlists() {
 	const playlists = useValue($spotifyStore.userPlaylists)
 	useEffect(() => {
@@ -10,6 +12,7 @@ export default function Playlists() {
 	}, [playlists])
 	return (
 		<group>
+			<TVInstances />
 		</group>
 	)
 }

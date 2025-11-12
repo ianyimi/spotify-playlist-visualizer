@@ -43,7 +43,6 @@ interface SceneProps {
 
 export default function Scene({ onProgressChange, onSceneReady }: SceneProps) {
 	const [mounted, setMounted] = useState(false)
-	const [hover, setHover] = useState(false)
 
 	useEffect(() => {
 		setMounted(true)
@@ -98,10 +97,6 @@ export default function Scene({ onProgressChange, onSceneReady }: SceneProps) {
 				<Playlists />
 				<ambientLight intensity={0.5} />
 				<directionalLight intensity={1} position={[10, 10, 5]} />
-				<mesh onPointerEnter={() => setHover(true)} onPointerLeave={() => setHover(false)}>
-					<boxGeometry args={[2, 2, 2]} />
-					<meshStandardMaterial color={hover ? "#ffff00" : "#ff0000"} />
-				</mesh>
 				<AdaptiveDpr />
 			</Bvh>
 		</Canvas>
