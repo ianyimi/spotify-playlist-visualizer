@@ -73,4 +73,4 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 	)
 }
 
-useGLTF.preload('staging/vintageTelevision.glb')
+useGLTF.preload('tv.glb')
