@@ -7,7 +7,7 @@ import type * as THREE from 'three'
 
 import { useValue } from '@legendapp/state/react'
 import { Instance, Instances, type InstancesProps, useGLTF } from '@react-three/drei'
-import { Uniform } from 'three'
+import { DoubleSide, Uniform } from 'three'
 import { type GLTF } from 'three-stdlib'
 
 import { $spotifyStore } from '~/stores/spotify'
@@ -42,6 +42,15 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 	const playlistsWithImages = playlists.filter((p) => p.images !== null && p.images.length > 0)
 
 	const textureArray = usePlaylistsTextureArray(playlists)
+
+	console.log('InstancedVintageTelevision render:', {
+		playlistCount: playlists.length,
+		textureArray: textureArray ? 'loaded' : 'null'
+	})
+
+	if (!textureArray) {
+		return null // Don't render until texture is ready
+	}
 
 	return (
 		<group {...groupProps}>

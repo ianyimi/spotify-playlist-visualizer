@@ -4,5 +4,5 @@ flat out int vInstanceIndex;
 void main() {
     vUv = uv;
     vInstanceIndex = gl_InstanceID;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
 }

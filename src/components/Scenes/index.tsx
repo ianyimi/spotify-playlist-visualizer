@@ -60,13 +60,23 @@ export default function InitialScene(props: GroupProps) {
 						{/* <CameraShake /> */}
 					</RenderTexture>
 				</TransitionMaterial>
-				{progress === 1 && <MeshPortalMaterial blend={progress} blur={0.2} resolution={1024}>
-					<Playlists position={[-5, 0, -5]} />
-					{/* <Box args={[0.5, 0.5, 0.5]} material={new MeshBasicMaterial({ color: hover ? "yellow" : "purple" })} onPointerOut={() => setHover(false)} onPointerOver={() => setHover(true)} position={[0, 0.2, 0]} /> */}
+				<MeshPortalMaterial blend={progress} blur={0.2} resolution={1024}>
+					<color args={['#050505']} attach="background" />
 					<ambientLight intensity={1} />
 					<directionalLight intensity={1} position={[5, 5, 5]} />
-					{/* <CameraShake /> */}
-				</MeshPortalMaterial>}
+
+					{/* Portal needs its own camera */}
+					<perspectiveCamera makeDefault position={[0, 0, 10]} />
+
+					<Playlists position={[0, 0, -10]} />
+
+					{/* Debug: Red box to verify portal is rendering */}
+					<Box
+						args={[2, 2, 2]}
+						material={new MeshBasicMaterial({ color: "red" })}
+						position={[0, 0, 0]}
+					/>
+				</MeshPortalMaterial>
 			</mesh>
 			<mesh geometry={nodes.TVSCREENBEZEL.geometry} material={materials['TV_Chayka-206']} position={[-0.4388, 1.2966, 0.8396]} scale={[5.1008, 5.1032, 4.9647]} />
 		</group>
