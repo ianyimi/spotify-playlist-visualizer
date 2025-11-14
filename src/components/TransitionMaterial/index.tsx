@@ -1,9 +1,8 @@
 import { useValue } from "@legendapp/state/react";
-import { type SpringValue } from "@react-spring/web";
 import { shaderMaterial } from "@react-three/drei";
 import { extend } from "@react-three/fiber";
 import { type ReactNode, useRef } from "react";
-import { type ShaderMaterial, type Side, type Texture, Uniform } from "three";
+import { type ShaderMaterial, type Texture, Uniform } from "three";
 
 import { useFramerate } from "~/hooks/useFramerate";
 import { $sceneStore } from "~/stores/scene";
@@ -17,21 +16,13 @@ const TransitionMaterialImpl = shaderMaterial(
 		textureB: null,
 		transitionProgress: 0,
 	},
-	vertexShader as string,
-	fragmentShader as string
+	vertexShader,
+	fragmentShader
 )
 
 extend({ TransitionMaterial: TransitionMaterialImpl })
 
-declare global {
-	namespace JSX {
-		interface InstrinsicElements {
-			transitionMaterial: Omit<TransitionMaterialProps, "children"> & ReactNode
-		}
-	}
-}
-
-interface TransitionMaterialProps {
+export interface TransitionMaterialProps {
 	children?: ReactNode
 	textureA?: null | Texture
 	textureB?: null | Texture

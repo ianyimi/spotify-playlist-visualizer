@@ -7,7 +7,7 @@ import type * as THREE from 'three'
 
 import { useValue } from '@legendapp/state/react'
 import { Instance, Instances, type InstancesProps, useGLTF } from '@react-three/drei'
-import { DoubleSide, Uniform } from 'three'
+import { Uniform } from 'three'
 import { type GLTF } from 'three-stdlib'
 
 import { $spotifyStore } from '~/stores/spotify'

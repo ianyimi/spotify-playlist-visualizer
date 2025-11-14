@@ -1,4 +1,4 @@
-import { Instance, useTexture } from "@react-three/drei";
+import { Instance } from "@react-three/drei";
 
 import type { Playlist } from "~/convex/types";
 import type { GroupProps } from "~/types";
@@ -11,7 +11,7 @@ interface InstancedScreenMaterialProps extends GroupProps {
 	playlistCount: number
 }
 
-export default function InstancedScreenMaterial({ index, playlist, playlistCount }: InstancedScreenMaterialProps) {
+export default function InstancedScreenMaterial({ index, playlistCount }: InstancedScreenMaterialProps) {
 	const centerX = ROW_LENGTH * GAPX / 2
 	const maxRows = Math.floor(playlistCount / ROW_LENGTH)
 	const centerY = maxRows * GAPY / 2
