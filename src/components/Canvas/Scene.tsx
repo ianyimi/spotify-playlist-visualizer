@@ -6,8 +6,11 @@ import { useEffect, useState } from "react"
 import * as THREE from "three"
 import { Vector3 } from "three"
 
+import InitialScene from "../Scenes"
 import CameraShake from "./CameraShake"
 import Playlists from "./Playlists"
+import PostProcessing from "./PostProcessing"
+import SignInTV from "./SignInTV"
 
 // Extend THREE with necessary geometries - this fixes Text3D issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,7 +97,9 @@ export default function Scene({ onProgressChange, onSceneReady }: SceneProps) {
 			<Bvh>
 				<ProgressBridge onChange={onProgressChange} />
 				<CameraShake />
-				<Playlists />
+				{/* <SignInTV position={[0, -1.25, 0]} /> */}
+				<InitialScene position={[0, -1.25, 0]} />
+				{/* <Playlists /> */}
 				<ambientLight intensity={0.5} />
 				<directionalLight intensity={1} position={[10, 10, 5]} />
 				<AdaptiveDpr />

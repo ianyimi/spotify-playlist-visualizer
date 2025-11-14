@@ -8,7 +8,14 @@ import "./src/env.mjs";
 const nextConfig = {
 	allowedDevOrigins: ["127.0.0.1", "localhost"],
 	reactCompiler: true,
-	turbopack: {}
+	turbopack: {
+		rules: {
+			"*.{glsl,vert,frag}": {
+				as: "*.js",
+				loaders: ["raw-loader"],
+			}
+		}
+	}
 };
 
 export default nextConfig

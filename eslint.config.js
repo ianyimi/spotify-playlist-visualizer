@@ -95,6 +95,7 @@ export default tseslint.config(
 			"perfectionist/sort-object-types": "warn",
 			"perfectionist/sort-union-types": "warn",
 			"perfectionist/sort-imports": "warn",
+			"perfectionist/sort-interfaces": "warn",
 			"perfectionist/sort-named-imports": "warn",
 			"perfectionist/sort-objects": [
 				"warn",

@@ -7,9 +7,15 @@ import type * as THREE from 'three'
 
 import { useValue } from '@legendapp/state/react'
 import { Instance, Instances, type InstancesProps, useGLTF } from '@react-three/drei'
+import { Uniform } from 'three'
 import { type GLTF } from 'three-stdlib'
 
 import { $spotifyStore } from '~/stores/spotify'
+
+import frag from "./frag.glsl"
+import InstancedScreenMaterial from './InstancedShaderMaterial'
+import { usePlaylistsTextureArray } from './usePlaylistsTextureArray'
+import vert from "./vert.glsl"
 
 type GLTFResult = GLTF & {
 	animations: THREE.AnimationClip[]
@@ -23,9 +29,9 @@ type GLTFResult = GLTF & {
 	}
 }
 
-const GAPX = 4;
-const GAPY = 3;
-const ROW_LENGTH = 10;
+export const GAPX = 4;
+export const GAPY = 3;
+export const ROW_LENGTH = 10;
 
 export default function InstancedVintageTelevision({ ...groupProps }: Partial<InstancesProps>) {
 	const playlists = useValue($spotifyStore.userPlaylists)
@@ -33,10 +39,14 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 	const centerX = ROW_LENGTH * GAPX / 2
 	const maxRows = Math.floor(playlists.length / ROW_LENGTH)
 	const centerY = maxRows * GAPY / 2
+	const playlistsWithImages = playlists.filter((p) => p.images !== null && p.images.length > 0)
+
+	const textureArray = usePlaylistsTextureArray(playlists)
+
 	return (
 		<group {...groupProps}>
 			<Instances dispose={null} geometry={nodes.TV.geometry} material={materials["TV_Chayka-206"]}>
-				{playlists.map((p, i) => {
+				{playlistsWithImages.map((p, i) => {
 					return (
 						<Instance
 							key={`tv-body-instance-${i}`}
@@ -47,19 +57,13 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 				})}
 			</Instances>
 			<Instances geometry={nodes.TVSCREEN.geometry}>
-				<meshStandardMaterial color="red" />
-				{playlists.map((p, i) => {
-					return (
-						<Instance
-							key={`tv-screen-instance-${i}`}
-							position={[i % ROW_LENGTH * GAPX - 0.0011 - centerX, Math.floor(i / ROW_LENGTH) * -GAPY + 0.0054 + centerY, -0.0071]}
-							scale={5.0809}
-						/>
-					)
+				<shaderMaterial fragmentShader={frag} glslVersion="300 es" uniforms={{ textureArray: new Uniform(textureArray) }} vertexShader={vert} />
+				{playlistsWithImages.map((p, i) => {
+					return <InstancedScreenMaterial index={i} key={`tv-screen-instance-${i}`} playlist={p} playlistCount={playlists.length} />
 				})}
 			</Instances>
 			<Instances geometry={nodes.TVSCREENBEZEL.geometry} material={materials["TV_Chayka-206"]}>
-				{playlists.map((p, i) => {
+				{playlistsWithImages.map((p, i) => {
 					return (
 						<Instance
 							key={`tv-bezel-instance-${i}`}

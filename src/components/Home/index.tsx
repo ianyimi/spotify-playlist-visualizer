@@ -1,6 +1,9 @@
 "use client"
 
-import { useMutation, useQuery } from "convex/react";
+import { useConvexMutation } from "@convex-dev/react-query";
+import { useValue } from "@legendapp/state/react";
+import { useMutation } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -10,19 +13,26 @@ import { useSession } from "~/auth/client";
 import SignInButton from "~/components/auth/SignIn";
 import Dom from "~/components/Dom"
 import { api } from "~/convex/_generated/api";
-import { $spotifyStore } from "~/stores/spotify";
+import { $sceneStore } from "~/stores/scene";
+import { $spotifyStore, $spotifyStoreActions } from "~/stores/spotify";
 
 export default function Home() {
 	const { data: session, isPending } = useSession()
+	const { setLoadingPlaylists } = useValue($spotifyStoreActions)
 	const userId = session?.user?.id as undefined | UserID
 	const userPlaylists = useQuery(api.spotify.readPlaylists, userId ? { userId } : "skip")
 
-	const refreshPlaylistsMutation = useMutation(api.spotify.refreshPlaylists)
+	const refreshPlaylistsMutation = useMutation({
+		mutationFn: useConvexMutation(api.spotify.refreshPlaylists),
+		onMutate: () => setLoadingPlaylists(true),
+		onSettled: () => setLoadingPlaylists(true),
+		onSuccess: () => setLoadingPlaylists(true),
+	})
 
 	useEffect(() => {
 		async function refreshPlaylists() {
 			if (!userId) { return }
-			await refreshPlaylistsMutation({ id: userId })
+			await refreshPlaylistsMutation.mutateAsync({ id: userId })
 		}
 		void refreshPlaylists()
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -32,6 +42,17 @@ export default function Home() {
 		if (!userPlaylists || userPlaylists.length < 1) { return }
 		$spotifyStore.userPlaylists.set(userPlaylists)
 	}, [userPlaylists])
+
+	useEffect(() => {
+		setTimeout(() => {
+			console.log('starting transition')
+			void $sceneStore.sceneDepth.transitionProgress.get().start(1, {
+				config: {
+					duration: 2000
+				}
+			}).then(() => console.log('transition ended'))
+		}, 3000)
+	}, [])
 
 	return (
 		<Dom>
