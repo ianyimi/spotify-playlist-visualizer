@@ -6,6 +6,7 @@ Command: npx gltfjsx@6.5.3 ./public/staging/vintageTelevision.glb -d -t -v -p 4
 import { useValue } from '@legendapp/state/react'
 import { MeshPortalMaterial, RenderTexture, useGLTF } from '@react-three/drei'
 import { useControls } from "leva"
+import dynamic from 'next/dynamic'
 import { useRef } from 'react'
 import { type Mesh, type MeshStandardMaterial } from 'three'
 import { type GLTF } from 'three-stdlib'
@@ -15,8 +16,9 @@ import type { GroupProps } from '~/types'
 import { $sceneStore } from '~/stores/scene'
 
 import Playlists from '../Canvas/Playlists'
-import TransitionMaterial from '../TransitionMaterial'
 import SpotifyLogo from './Spotify'
+
+const TransitionMaterial = dynamic(() => import("~/components/TransitionMaterial"), { ssr: false })
 
 type GLTFResult = GLTF & {
 	materials: {
