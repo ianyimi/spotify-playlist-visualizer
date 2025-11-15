@@ -6,11 +6,13 @@ import { Loader2Icon, LogIn, LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { signOut, useSession } from "~/auth/client"
+import { $spotifyStoreActions } from "~/stores/spotify"
 import { cn } from "~/styles/utils"
 import { Button } from '~/ui/button'
 
 export default function SignInButton({ className, loading, ...buttonProps }: ComponentPropsWithRef<"button"> & { loading: boolean }) {
 	const { data: session } = useSession()
+	const { clearState } = $spotifyStoreActions.get()
 	const router = useRouter()
 
 	if (loading) {
@@ -29,6 +31,7 @@ export default function SignInButton({ className, loading, ...buttonProps }: Com
 			await signOut({
 				fetchOptions: {
 					onSuccess: () => {
+						clearState()
 						router.push("/")
 						router.refresh()
 					}

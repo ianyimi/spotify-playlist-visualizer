@@ -22,6 +22,7 @@ export const $spotifyStore = observable<SpotifyStore>({
 
 interface SpotifyStoreActions {
 	clearActivePlaylist: () => void;
+	clearState: () => void;
 	setActivePlaylist: (playlist: number | Playlist) => void;
 	setLoadingPlaylists: (loading: boolean) => void;
 	setLoadingTracks: (loading: boolean) => void;
@@ -30,6 +31,22 @@ interface SpotifyStoreActions {
 }
 
 export const $spotifyStoreActions = observable<SpotifyStoreActions>({
+	clearActivePlaylist: () => {
+		$spotifyStore.activePlaylist.set(null);
+		$spotifyStore.tracksReady.set(false);
+	},
+
+	clearState: () => {
+		$spotifyStore.set({
+			activePlaylist: null,
+			loadingPlaylistTracks: false,
+			loadingUserPlaylists: false,
+			playlistsReady: false,
+			tracksReady: false,
+			userPlaylists: []
+		})
+	},
+
 	setActivePlaylist: (playlist: number | Playlist) => {
 		if (typeof playlist === "number") {
 			$spotifyStore.activePlaylist.set($spotifyStore.userPlaylists.get()[playlist] ?? null)
@@ -57,9 +74,4 @@ export const $spotifyStoreActions = observable<SpotifyStoreActions>({
 	setPlaylistsReady: (ready) => $spotifyStore.playlistsReady.set(ready),
 
 	setTracksReady: (ready) => $spotifyStore.tracksReady.set(ready),
-
-	clearActivePlaylist: () => {
-		$spotifyStore.activePlaylist.set(null);
-		$spotifyStore.tracksReady.set(false);
-	}
 })
