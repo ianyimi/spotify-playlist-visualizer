@@ -1,12 +1,15 @@
 "use client"
 
+import type { ComponentPropsWithRef } from "react"
+
 import { Loader2Icon, LogIn, LogOut } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { signOut, useSession } from "~/auth/client"
+import { cn } from "~/styles/utils"
 import { Button } from '~/ui/button'
 
-export default function SignInButton({ loading }: { loading: boolean }) {
+export default function SignInButton({ className, loading, ...buttonProps }: ComponentPropsWithRef<"button"> & { loading: boolean }) {
 	const { data: session } = useSession()
 	const router = useRouter()
 
@@ -35,7 +38,7 @@ export default function SignInButton({ loading }: { loading: boolean }) {
 	}
 
 	return (
-		<Button className="justify-between cursor-pointer gap-2" onClick={handleAuth} variant="default">
+		<Button className={cn("justify-between cursor-pointer gap-2", className)} onClick={handleAuth} variant="default" {...buttonProps}>
 			{!session ? (
 				<LogOut size={20} />
 			) : (

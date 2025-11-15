@@ -96,7 +96,7 @@ export default function Scene({ onProgressChange, onSceneReady }: SceneProps) {
 				<CameraShake />
 				<InitialScene position={[0, -1.25, 0]} />
 				<ambientLight intensity={0.5} />
-				<directionalLight intensity={1} position={[10, 10, 5]} />
+				<directionalLight intensity={1} position={[5, 5, 5]} />
 				<AdaptiveDpr />
 			</Bvh>
 		</Canvas>

@@ -24,7 +24,7 @@ type GLTFResult = GLTF & {
 }
 
 export default function SignInTV(props: GroupProps) {
-	const { materials, nodes } = useGLTF('tv.glb') as unknown as GLTFResult
+	const { materials, nodes } = useGLTF('models/tv.glb') as unknown as GLTFResult
 	const screenMesh = useRef(null)
 	return (
 		<group {...props} dispose={null}>
@@ -41,4 +41,4 @@ export default function SignInTV(props: GroupProps) {
 	)
 }
 
-useGLTF.preload('tv.glb')
+useGLTF.preload('models/tv.glb')
