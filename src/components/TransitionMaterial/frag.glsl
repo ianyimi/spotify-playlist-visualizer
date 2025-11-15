@@ -60,6 +60,7 @@ void main() {
 
     // The visible face is in the XY plane
     vec2 pos2D = vPosition.xy;
+    vec2 uv = vUv;
 
     // Manually set the center point - adjust these values to shift the origin
     // Increase X to move center right, decrease to move left
@@ -83,7 +84,7 @@ void main() {
 
     // Add noise to first scene texture
     float strength = (0.3 + 0.7 * noise1d(0.3 * uTime)) * 200. / uResolution.x;
-    texA.rgb += vec3(5.0 * strength * (random2d(vUv + 1.133001 * vec2(uTime, 1.13)) - 0.5));
+    texA.rgb += vec3(5.0 * strength * (random2d(uv + 1.133001 * vec2(uTime, 1.13)) - 0.5));
 
     vec4 finalColor = mix(texA, texB, reveal);
     gl_FragColor = finalColor;

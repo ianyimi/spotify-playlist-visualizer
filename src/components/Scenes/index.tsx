@@ -7,18 +7,20 @@ import { useValue } from '@legendapp/state/react'
 import { MeshPortalMaterial, RenderTexture, useGLTF } from '@react-three/drei'
 import { useControls } from "leva"
 import dynamic from 'next/dynamic'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { type Mesh, type MeshStandardMaterial } from 'three'
 import { type GLTF } from 'three-stdlib'
 
 import type { GroupProps } from '~/types'
 
+import SpotifyLogo from '~/models/Spotify'
 import { $sceneStore } from '~/stores/scene'
 
 import Playlists from '../Canvas/Playlists'
-import SpotifyLogo from './Spotify'
+// import Playlists from '../Canvas/Playlists'
+import PlaylistsScene from './Playlists'
 
-const TransitionMaterial = dynamic(() => import("~/components/TransitionMaterial"), { ssr: false })
+const TransitionMaterial = dynamic(() => import("../TransitionMaterial"), { ssr: false })
 
 type GLTFResult = GLTF & {
 	materials: {
@@ -35,11 +37,13 @@ export default function InitialScene(props: GroupProps) {
 	const { materials, nodes } = useGLTF('models/tv.glb') as unknown as GLTFResult
 	const transitionProgress = useValue($sceneStore.sceneDepth.transitionProgress)
 	const screenMesh = useRef<Mesh>(null)
+	const [blend, setBlend] = useState(0)
 
 	useControls({
 		progress: {
 			max: 1, min: 0, onChange: (v: number) => {
 				transitionProgress.set(v)
+				setBlend(v)
 			}, value: 0
 		}
 	})
@@ -49,32 +53,25 @@ export default function InitialScene(props: GroupProps) {
 			<mesh geometry={nodes.TV.geometry} material={materials['TV_Chayka-206']} position={[-0.0011, 0.0054, -0.0071]} scale={5.0041} />
 			<mesh geometry={nodes.TVSCREEN.geometry} position={[-0.0011, 0.0054, -0.0071]} ref={screenMesh} scale={5.0809}>
 				<TransitionMaterial>
-					<RenderTexture attach="uTextureA">
+					<RenderTexture attach="uTextureA" frames={1}>
 						<SpotifyLogo position={[1.3, -1.25, 1]} rotation={[0, 0, 3 * Math.PI / 2 + 0.15]} scale={0.85} />
 						<ambientLight intensity={1} />
 						<directionalLight intensity={1} position={[5, 5, 5]} />
 						<color args={["#050505"]} attach="background" />
-						{/* <CameraShake /> */}
 					</RenderTexture>
-					<RenderTexture attach="uTextureB">
-						<Playlists position={[0, -7, -25]} />
-						<ambientLight intensity={1} />
-						<directionalLight intensity={1} position={[5, 5, 5]} />
-						<color args={["#050505"]} attach="background" />
-						<perspectiveCamera position={[0, 0, -10]} />
-						{/* <CameraShake /> */}
+					<RenderTexture attach="uTextureB" frames={Infinity}>
+						<PlaylistsScene />
 					</RenderTexture>
 				</TransitionMaterial>
 			</mesh>
-			{/* <mesh> */}
-			{/* 	<MeshPortalMaterial blend={transitionProgress.get()} blur={0.2} resolution={1024}> */}
-			{/* 		<color args={['#050505']} attach="background" /> */}
-			{/* 		<ambientLight intensity={1} /> */}
-			{/* 		<directionalLight intensity={1} position={[5, 5, 5]} /> */}
-			{/* 		<perspectiveCamera position={[0, 0, 10]} /> */}
-			{/* 		<Playlists position={[0, 0, -10]} /> */}
-			{/* 	</MeshPortalMaterial> */}
-			{/* </mesh> */}
+			<mesh geometry={nodes.TVSCREEN.geometry} position={[-0.0011, 0.0054, -0.0071]} scale={5.0809}>
+				<MeshPortalMaterial blend={blend - 1} blur={0.2} resolution={1024}>
+					<color args={['#050505']} attach="background" />
+					<ambientLight intensity={1} />
+					<directionalLight intensity={1} position={[5, 5, 5]} />
+					<Playlists position={[0, 0, -10]} />
+				</MeshPortalMaterial>
+			</mesh>
 			<mesh geometry={nodes.TVSCREENBEZEL.geometry} material={materials['TV_Chayka-206']} position={[-0.4388, 1.2966, 0.8396]} scale={[5.1008, 5.1032, 4.9647]} />
 		</group>
 	)
