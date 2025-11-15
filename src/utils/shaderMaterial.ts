@@ -2,12 +2,10 @@ import { type ConstructorRepresentation } from '@react-three/fiber'
 import * as THREE from 'three'
 import { type MeshBVHUniformStruct } from 'three-mesh-bvh'
 
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type Uniforms = Record<string, Array<UniformValue> | Record<string, UniformValue> | UniformValue>
 
 type UniformValue =
 	| boolean
-	// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 	| MeshBVHUniformStruct // TODO: remove?
 	| null
 	| number
