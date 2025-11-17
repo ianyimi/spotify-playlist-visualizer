@@ -1,7 +1,7 @@
-uniform vec2 uResolution;
+uniform vec2 resolution;
 uniform sampler2D uTextureA;
 uniform sampler2D uTextureB;
-uniform float uTransitionProgress;
+uniform float blend;
 uniform float uTime;
 
 varying vec2 vUv;
@@ -55,8 +55,10 @@ highp float random2d(vec2 co) {
 }
 
 void main() {
-    vec4 texA = texture2D(uTextureA, vUv);
-    vec4 texB = texture2D(uTextureB, vUv);
+    // Use screen-space coordinates like MeshPortalMaterial for proper alignment
+    vec2 screenUv = gl_FragCoord.xy / resolution.xy;
+    vec4 texA = texture2D(uTextureA, screenUv);
+    vec4 texB = texture2D(uTextureB, screenUv);
 
     // The visible face is in the XY plane
     vec2 pos2D = vPosition.xy;
@@ -71,21 +73,23 @@ void main() {
     vec2 centeredPos = pos2D - center;
 
     // Maximum radius to reach corners - adjust this if transition doesn't cover full screen
-    float maxRadius = 0.335; // Increase if transition stops before edges
+    float maxRadius = 0.375; // Increase if transition stops before edges
 
     // Calculate expanding radius based on transition progress
-    float currentRadius = uTransitionProgress * maxRadius;
+    float currentRadius = blend * maxRadius;
 
     // Use circle SDF
     float sdf = sdCircle(centeredPos, currentRadius);
 
     // Smooth reveal at the circle edge
-    float reveal = smoothstep(0.0, -0.1, sdf);
+    float reveal = smoothstep(-0.075, -0.08, sdf);
 
     // Add noise to first scene texture
-    float strength = (0.3 + 0.7 * noise1d(0.3 * uTime)) * 200. / uResolution.x;
+    float strength = (0.3 + 0.7 * noise1d(0.3 * uTime)) * 200. / resolution.x;
     texA.rgb += vec3(5.0 * strength * (random2d(uv + 1.133001 * vec2(uTime, 1.13)) - 0.5));
 
     vec4 finalColor = mix(texA, texB, reveal);
     gl_FragColor = finalColor;
+    // #include <tonemapping_fragment>
+    #include <colorspace_fragment>
 }

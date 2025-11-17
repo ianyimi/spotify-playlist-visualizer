@@ -29,17 +29,17 @@ type GLTFResult = GLTF & {
 	}
 }
 
-export default function SpotifyLogo(props: GroupProps) {
+export default function SpotifyLogo({ rotate = false, ...groupProps }: GroupProps & { rotate?: boolean }) {
 	const { materials, nodes } = useGLTF('models/spotify.glb') as unknown as GLTFResult
 	const groupRef = useRef<Group>(null)
 
-	// useFramerate(30, () => {
-	// 	if (!groupRef.current) { return; }
-	// 	groupRef.current.rotation.x += 0.025
-	// })
+	useFramerate(30, () => {
+		if (!groupRef.current || !rotate) { return; }
+		groupRef.current.rotation.x += 0.025
+	})
 
 	return (
-		<group {...props} dispose={null} ref={groupRef}>
+		<group {...groupProps} dispose={null} ref={groupRef}>
 			<group scale={0.01}>
 				<mesh geometry={nodes.Extrude_Mat_0.geometry} material={materials.material} />
 				<mesh geometry={nodes.Rounding_1_Mat_0.geometry} material={materials.material} />

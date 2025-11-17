@@ -4,9 +4,8 @@ Command: npx gltfjsx@6.5.3 ./public/staging/vintageTelevision.glb -d -t -v -p 4
 */
 
 import { useValue } from '@legendapp/state/react'
-import { RenderTexture, useGLTF } from '@react-three/drei'
+import { useGLTF } from '@react-three/drei'
 import { useControls } from "leva"
-import dynamic from 'next/dynamic'
 import { useRef, useState } from 'react'
 import { type Mesh, type MeshStandardMaterial, Uniform, Vector2 } from 'three'
 import { type GLTF } from 'three-stdlib'
@@ -16,13 +15,12 @@ import type { GroupProps } from '~/types'
 import SpotifyLogo from '~/models/Spotify'
 import { $sceneStore } from '~/stores/scene'
 
-import Playlists from '../Canvas/Playlists'
 import PortalMaterial from "../PortalMaterial"
 import frag from "../TransitionMaterial/frag.glsl"
 import vert from "../TransitionMaterial/vert.glsl"
+import transitionFrag from "./frag.glsl"
 import PlaylistsScene from './Playlists'
-
-const TransitionMaterial = dynamic(() => import("../TransitionMaterial"), { ssr: false })
+import transitionVert from "./vert.glsl"
 
 type GLTFResult = GLTF & {
 	materials: {
@@ -37,14 +35,20 @@ type GLTFResult = GLTF & {
 
 export default function InitialScene(props: GroupProps) {
 	const { materials, nodes } = useGLTF('models/tv.glb') as unknown as GLTFResult
-	const transitionProgress = useValue($sceneStore.sceneDepth.transitionProgress)
+	const mblend = useValue($sceneStore.playlists.materialBlendValue)
 	const screenMesh = useRef<Mesh>(null)
 	const [blend, setBlend] = useState(0)
+	const [_materialBlend, setMaterialBlend] = useState(0)
+	console.log('mblend: ', mblend)
 
 	useControls({
-		progress: {
+		'Material Blend': {
 			max: 1, min: 0, onChange: (v: number) => {
-				transitionProgress.set(v)
+				setMaterialBlend(v)
+			}, value: mblend
+		},
+		'Screen Blend': {
+			max: 1, min: 0, onChange: (v: number) => {
 				setBlend(v)
 			}, value: 0
 		}
@@ -54,36 +58,27 @@ export default function InitialScene(props: GroupProps) {
 		<group {...props} dispose={null}>
 			<mesh geometry={nodes.TV.geometry} material={materials['TV_Chayka-206']} position={[-0.0011, 0.0054, -0.0071]} scale={5.0041} />
 			<mesh geometry={nodes.TVSCREEN.geometry} position={[-0.0011, 0.0054, -0.0071]} ref={screenMesh} scale={5.0809}>
-				{/* <TransitionMaterial> */}
-				{/* 	<RenderTexture attach="uTextureA"> */}
-				{/* 		<SpotifyLogo position={[1.3, -1.25, 1]} rotation={[0, 0, 3 * Math.PI / 2 + 0.15]} scale={0.85} /> */}
-				{/* 		<ambientLight intensity={100} /> */}
-				{/* 		<directionalLight intensity={1} position={[5, 5, 5]} /> */}
-				{/* 	</RenderTexture> */}
-				{/* 	<RenderTexture attach="uTextureB"> */}
-				{/* 		<PlaylistsScene /> */}
-				{/* 	</RenderTexture> */}
-				{/* </TransitionMaterial> */}
 				<PortalMaterial
-					// altScene={
-					// <RenderTexture attach="uTextureA">
-					// <SpotifyLogo position={[1.3, -1.25, 1]} rotation={[0, 0, 3 * Math.PI / 2 + 0.15]} scale={0.85} />
-					// <ambientLight intensity={100} />
-					// <directionalLight intensity={1} position={[5, 5, 5]} />
-					// <color args={["#05f505"]} attach="background" />
-					// </RenderTexture>
-					// }
+					altScene={
+						<group>
+							<SpotifyLogo position={[-0.35, 0, 1]} scale={0.85} />
+							<ambientLight intensity={1} />
+							<directionalLight intensity={1} position={[5, 5, 5]} />
+							<color args={["#05f505"]} attach="background" />
+						</group>
+					}
 					blend={blend}
 					blur={0.2}
-					// fragmentShader={frag}
-					// portalSceneRenderTarget="uTextureB"
-					// glslVersion="300 es"
+					fragmentShader={frag}
+					materialBlend={mblend}
 					resolution={1024}
+					transitionFragmentShader={transitionFrag}
+					transitionVertexShader={transitionVert}
 					uniforms={{
-						uResolution: new Uniform(new Vector2(window.innerWidth, window.innerHeight)),
+						resolution: new Uniform(new Vector2(window.innerWidth, window.innerHeight)),
 						uTime: new Uniform(0)
 					}}
-				// vertexShader={vert}
+					vertexShader={vert}
 				>
 					<PlaylistsScene />
 				</PortalMaterial>

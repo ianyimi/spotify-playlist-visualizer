@@ -4,7 +4,8 @@
 // https://github.com/N8python/maskBlur
 
 import { RenderTexture, useFBO, useIntersect } from '@react-three/drei'
-import { extend, type ReactThreeFiber, type ThreeElements, useFrame, useThree } from '@react-three/fiber'
+import { type ThreeElements, useFrame, useThree } from '@react-three/fiber'
+import dynamic from 'next/dynamic'
 import {
 	forwardRef,
 	type ForwardRefExoticComponent,
@@ -31,6 +32,7 @@ import {
 	MeshBasicMaterial,
 	NearestFilter,
 	OrthographicCamera,
+	type PerspectiveCamera,
 	RedFormat,
 	REVISION,
 	type Scene,
@@ -42,61 +44,9 @@ import {
 } from 'three'
 import { FullScreenQuad } from 'three-stdlib'
 
-import { shaderMaterial } from '~/utils/shaderMaterial'
-
-import frag from "./frag.glsl"
-import vert from "./vert.glsl"
-
-type ForwardRefComponent<P, T> = ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<T>>
-
 const version = parseInt(REVISION.replace(/\D+/g, ''))
 
-const PortalMaterialImpl = /* @__PURE__ */ shaderMaterial(
-	{
-		blend: 0,
-		blur: 0,
-		map: null,
-		resolution: /* @__PURE__ */ new Vector2(),
-		sdf: null,
-		size: 0,
-	},
-	`varying vec2 vUv;
-   void main() {
-     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-     vUv = uv;
-   }`,
-	`uniform sampler2D sdf;
-   uniform sampler2D map;
-   uniform float blur;
-   uniform float size;
-   uniform float time;
-   uniform vec2 resolution;
-   varying vec2 vUv;
-   #include <packing>
-   void main() {
-     vec2 uv = gl_FragCoord.xy / resolution.xy;
-     vec4 t = texture2D(map, uv);
-     float k = blur;
-     float d = texture2D(sdf, vUv).r/size;
-     float alpha = 1.0 - smoothstep(0.0, 1.0, clamp(d/k + 1.0, 0.0, 1.0));
-     gl_FragColor = vec4(t.rgb, blur == 0.0 ? t.a : t.a * alpha);
-     #include <tonemapping_fragment>
-     #include <${version >= 154 ? 'colorspace_fragment' : 'encodings_fragment'}>
-   }`
-)
-
-declare module '@react-three/fiber' {
-	interface ThreeElements {
-		portalMaterialImpl: ThreeElements['shaderMaterial'] & {
-			blend: number
-			blur: number
-			map?: Texture
-			resolution: ReactThreeFiber.Vector2
-			sdf?: Texture
-			size?: number
-		}
-	}
-}
+const TransitionMaterial = dynamic(() => import("../TransitionMaterial"), { ssr: false })
 
 export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'ref'> & {
 	altScene?: ThreeElements['portalMaterialImpl']["children"];
@@ -110,8 +60,11 @@ export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'r
 
 	/** Optionally diable events inside the portal, defaults to false */
 	events?: boolean
-	/** Optionally provide a render target (attach) for the portal scene RenderTexture Material to use */
-	portalSceneRenderTarget?: string;
+
+	/** Mix the scenes displayed on the portal material,
+	 * 0 = world scene render, 0.5 = both scenes render, 1 = portal scene renders, defaults to 0 */
+	materialBlend?: number
+
 	/** Optional render priority, defaults to 0 */
 	renderPriority?: number
 	/** SDF resolution, the smaller the faster is the start-up time (default: 512) */
@@ -122,42 +75,50 @@ export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'r
 	/** Optionally provide a vertex shader for the RenderTexture Material to use */
 	transitionVertexShader?: string;
 
+	/** Optionally provide a texture to render instead of an altScene to be rendered while materialBlend & blend values are both at 0 */
+	uTextureA?: Texture;
+
 	/** By default portals use relative coordinates, contents are affects by the local matrix transform */
 	worldUnits?: boolean
 }
 
-const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMaterialImpl']> =
+type ForwardRefComponent<P, T> = ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<T>>
+
+const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['transitionMaterial']> =
   // eslint-disable-next-line react/display-name
   /* @__PURE__ */ forwardRef(
 	(
 		{
 			altScene,
+			blend = 0,
 			blur = 0,
 			children,
 			eventPriority = 0,
 			events = undefined,
 			glslVersion,
-			portalSceneRenderTarget,
+			materialBlend = 0,
 			renderPriority = 0,
 			resolution = 512,
 			transitionFragmentShader,
 			transitionVertexShader,
 			uniforms,
+			uTextureA,
 			worldUnits = false,
-			...props
+			...shaderProps
 		},
 		fref
 	) => {
-		extend({ PortalMaterialImpl })
 
-		const ref = useRef<ThreeElements['portalMaterialImpl']>(null!)
-		const { gl, scene, setEvents, size, viewport } = useThree()
+		const ref = useRef<ThreeElements['transitionMaterial']>(null!)
+		const { camera, gl, scene, setEvents, size, viewport } = useThree()
 		const maskRenderTarget = useFBO(resolution, resolution)
+		const mainCameraRef = useRef<PerspectiveCamera>(camera as PerspectiveCamera)
 
 		const [priority, setPriority] = useState(0)
 		useFrame(() => {
-			// If blend is > 0 then the portal is being entered, the render-priority must change
-			const p = ref.current.blend > 0 ? Math.max(1, renderPriority) : 0
+			mainCameraRef.current = camera as PerspectiveCamera
+			// If blend (sceneBlend) is > 0 then the portal is being entered, the render-priority must change
+			const p = blend > 0 ? Math.max(1, renderPriority) : 0
 			if (priority !== p) { setPriority(p) }
 		})
 
@@ -247,17 +208,19 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMate
 		}, [])
 
 		return (
-			<portalMaterialImpl
+			<TransitionMaterial
 				attach="material"
-				blend={0}
+				blend={materialBlend}
 				blur={blur}
 				ref={ref}
-				resolution={[size.width * viewport.dpr, size.height * viewport.dpr]}
-				{...props}
+				resolution={new Vector2(size.width * viewport.dpr, size.height * viewport.dpr)}
+				{...shaderProps}
 			>
-				{altScene}
+				{!uTextureA && altScene && <RenderTexture attach="uTextureA" frames={Infinity}>
+					{altScene}
+				</RenderTexture>}
 				<RenderTexture
-					attach={portalSceneRenderTarget ?? "map"}
+					attach="uTextureB"
 					compute={compute}
 					eventPriority={eventPriority}
 					frames={visible ? Infinity : 0}
@@ -271,12 +234,13 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMate
 						material={ref}
 						priority={priority}
 						rootScene={scene}
+						sceneBlend={blend}
 						uniforms={uniforms}
 						vertexShader={transitionVertexShader}
 						worldUnits={worldUnits}
 					/>
 				</RenderTexture>
-			</portalMaterialImpl>
+			</TransitionMaterial>
 		)
 	}
 )
@@ -288,6 +252,7 @@ function ManagePortalScene({
 	material,
 	priority,
 	rootScene,
+	sceneBlend,
 	uniforms = {},
 	vertexShader,
 	worldUnits,
@@ -295,9 +260,10 @@ function ManagePortalScene({
 	events?: boolean;
 	fragmentShader?: string;
 	glslVersion?: GLSLVersion;
-	material: RefObject<ThreeElements['portalMaterialImpl']>
+	material: RefObject<ThreeElements['transitionMaterial']>
 	priority: number;
 	rootScene: Scene;
+	sceneBlend: number;
 	uniforms?: Record<string, IUniform<unknown>>;
 	vertexShader?: string;
 	worldUnits: boolean;
@@ -322,7 +288,19 @@ function ManagePortalScene({
 		const blend = { value: 0 }
 		const quad = new FullScreenQuad(
 			new ShaderMaterial({
-				fragmentShader: /*glsl*/ fragmentShader ?? frag,
+				fragmentShader: fragmentShader ?? /*glsl*/ `
+          uniform sampler2D a;
+          uniform sampler2D b;
+          uniform float blend;
+          varying vec2 vUv;
+          #include <packing>
+          void main() {
+            vec4 ta = texture2D(a, vUv);
+            vec4 tb = texture2D(b, vUv);
+            gl_FragColor = mix(tb, ta, blend);
+            #include <tonemapping_fragment>
+            #include <${version >= 154 ? 'colorspace_fragment' : 'encodings_fragment'}>
+          }`,
 				glslVersion,
 				uniforms: {
 					a: { value: buffer1.texture },
@@ -330,7 +308,12 @@ function ManagePortalScene({
 					blend,
 					...uniforms
 				},
-				vertexShader: /*glsl*/ vertexShader ?? vert
+				vertexShader: vertexShader ?? /*glsl*/ `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+          }`
 			})
 		)
 		return [quad, blend]
@@ -346,7 +329,7 @@ function ManagePortalScene({
 			if (!worldUnits) {
 				// If the portal renders exclusively the original scene needs to be updated
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-				if (priority && material.current?.blend === 1) { parent.updateWorldMatrix(true, false) }
+				if (priority && sceneBlend === 1) { parent.updateWorldMatrix(true, false) }
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
 				scene.matrixWorld.copy(parent.matrixWorld)
 			} else { scene.matrixWorld.identity() }
@@ -354,17 +337,17 @@ function ManagePortalScene({
 			// This bit is only necessary if the portal is blended, now it has a render-priority
 			// and will take over the render loop
 			if (priority) {
-				if (material.current?.blend > 0 && material.current?.blend < 1) {
+				if (sceneBlend > 0 && sceneBlend < 1) {
 					// If blend is ongoing (> 0 and < 1) then we need to render both the root scene
 					// and the portal scene, both will then be mixed in the quad from above
-					blend.value = material.current.blend
+					blend.value = sceneBlend
 					state.gl.setRenderTarget(buffer1)
 					state.gl.render(scene, state.camera)
 					state.gl.setRenderTarget(buffer2)
 					state.gl.render(rootScene, state.camera)
 					state.gl.setRenderTarget(null)
 					quad.render(state.gl)
-				} else if (material.current?.blend === 1) {
+				} else if (sceneBlend === 1) {
 					// However if blend is 1 we only need to render the portal scene
 					state.gl.render(scene, state.camera)
 				}

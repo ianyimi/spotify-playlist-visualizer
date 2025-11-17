@@ -23,8 +23,8 @@ export default function Home() {
 	const refreshPlaylistsMutation = useMutation({
 		mutationFn: useConvexMutation(api.spotify.refreshPlaylists),
 		onMutate: () => setLoadingPlaylists(true),
-		onSettled: () => setLoadingPlaylists(true),
-		onSuccess: () => setLoadingPlaylists(true),
+		onSettled: () => setLoadingPlaylists(false),
+		onSuccess: () => setLoadingPlaylists(false),
 	})
 
 	useEffect(() => {
