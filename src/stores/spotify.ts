@@ -3,7 +3,7 @@ import { observable } from "@legendapp/state";
 import type { Playlist } from "~/convex/types";
 
 interface SpotifyStore {
-	activePlaylist: null | Playlist;
+	activePlaylists: Playlist[];
 	loadingPlaylistTracks: boolean;
 	loadingUserPlaylists: boolean;
 	playlistsReady: boolean; // All playlists loaded and processed
@@ -12,7 +12,7 @@ interface SpotifyStore {
 }
 
 export const $spotifyStore = observable<SpotifyStore>({
-	activePlaylist: null,
+	activePlaylists: [],
 	loadingPlaylistTracks: false,
 	loadingUserPlaylists: false,
 	playlistsReady: false,
@@ -21,24 +21,25 @@ export const $spotifyStore = observable<SpotifyStore>({
 });
 
 interface SpotifyStoreActions {
-	clearActivePlaylist: () => void;
+	clearActivePlaylists: () => void;
 	clearState: () => void;
-	setActivePlaylist: (playlist: number | Playlist) => void;
+	popActivePlaylists: (playlist: number | Playlist) => Playlist | undefined;
 	setLoadingPlaylists: (loading: boolean) => void;
 	setLoadingTracks: (loading: boolean) => void;
 	setPlaylistsReady: (ready: boolean) => void;
 	setTracksReady: (ready: boolean) => void;
+	unshiftActivePlaylists: (playlist: number | Playlist) => void;
 }
 
 export const $spotifyStoreActions = observable<SpotifyStoreActions>({
-	clearActivePlaylist: () => {
-		$spotifyStore.activePlaylist.set(null);
+	clearActivePlaylists: () => {
+		$spotifyStore.activePlaylists.set([]);
 		$spotifyStore.tracksReady.set(false);
 	},
 
 	clearState: () => {
 		$spotifyStore.set({
-			activePlaylist: null,
+			activePlaylists: [],
 			loadingPlaylistTracks: false,
 			loadingUserPlaylists: false,
 			playlistsReady: false,
@@ -47,12 +48,18 @@ export const $spotifyStoreActions = observable<SpotifyStoreActions>({
 		})
 	},
 
-	setActivePlaylist: (playlist: number | Playlist) => {
+	popActivePlaylists: () => {
+		return $spotifyStore.activePlaylists.pop()
+	},
+
+	unshiftActivePlaylists: (playlist: number | Playlist) => {
 		if (typeof playlist === "number") {
-			$spotifyStore.activePlaylist.set($spotifyStore.userPlaylists.get()[playlist] ?? null)
+			const p = $spotifyStore.userPlaylists.at(playlist)
+			if (!p) { return }
+			$spotifyStore.activePlaylists.unshift(p)
 			return
 		}
-		$spotifyStore.activePlaylist.set(playlist)
+		$spotifyStore.activePlaylists.unshift(playlist)
 	},
 
 	setLoadingPlaylists: (loading) => {

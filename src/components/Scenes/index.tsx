@@ -6,14 +6,14 @@ Command: npx gltfjsx@6.5.3 ./public/staging/vintageTelevision.glb -d -t -v -p 4
 import { useValue } from '@legendapp/state/react'
 import { useGLTF } from '@react-three/drei'
 import { useControls } from "leva"
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { type Mesh, type MeshStandardMaterial, Uniform, Vector2 } from 'three'
 import { type GLTF } from 'three-stdlib'
 
 import type { GroupProps } from '~/types'
 
 import SpotifyLogo from '~/models/Spotify'
-import { $sceneStore } from '~/stores/scene'
+import { $sceneStore, $sceneStoreActions } from '~/stores/scene'
 
 import PortalMaterial from "../PortalMaterial"
 import frag from "../TransitionMaterial/frag.glsl"
@@ -35,20 +35,21 @@ type GLTFResult = GLTF & {
 
 export default function InitialScene(props: GroupProps) {
 	const { materials, nodes } = useGLTF('models/tv.glb') as unknown as GLTFResult
-	const transitionProgress = useValue($sceneStore.sceneDepth.transitionProgress)
+	const mblend = useValue($sceneStore.playlists.materialBlendValue)
+	const sceneStoreActions = useValue($sceneStoreActions)
 	const screenMesh = useRef<Mesh>(null)
 	const [blend, setBlend] = useState(0)
 	const [materialBlend, setMaterialBlend] = useState(0)
+	console.log('mblend: ', mblend)
 
 	useControls({
 		'Material Blend': {
 			max: 1, min: 0, onChange: (v: number) => {
 				setMaterialBlend(v)
-			}, value: 1
+			}, value: mblend
 		},
 		'Screen Blend': {
 			max: 1, min: 0, onChange: (v: number) => {
-				transitionProgress.set(v)
 				setBlend(v)
 			}, value: 0
 		}
@@ -70,7 +71,7 @@ export default function InitialScene(props: GroupProps) {
 					blend={blend}
 					blur={0.2}
 					fragmentShader={frag}
-					materialBlend={materialBlend}
+					materialBlend={mblend}
 					resolution={1024}
 					transitionFragmentShader={transitionFrag}
 					transitionVertexShader={transitionVert}

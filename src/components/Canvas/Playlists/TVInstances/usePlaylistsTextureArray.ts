@@ -1,10 +1,14 @@
+import { useValue } from "@legendapp/state/react"
 import { useEffect, useState } from "react"
 import { DataArrayTexture, LinearFilter, RGBAFormat } from "three"
 
 import type { Playlist } from "~/convex/types"
 
+import { $sceneStoreActions } from "~/stores/scene"
+
 export function usePlaylistsTextureArray(playlists: Playlist[]) {
 	const [texture, setTexture] = useState<DataArrayTexture | null>(null)
+	const sceneStoreActions = useValue($sceneStoreActions)
 
 	useEffect(() => {
 		if (!playlists || playlists.length === 0) { return }
@@ -53,7 +57,7 @@ export function usePlaylistsTextureArray(playlists: Playlist[]) {
 			const img = new Image()
 			img.crossOrigin = 'anonymous'
 
-			img.onload = () => {
+			img.onload = async () => {
 				const canvas = document.createElement('canvas')
 				canvas.width = size
 				canvas.height = size
@@ -67,8 +71,9 @@ export function usePlaylistsTextureArray(playlists: Playlist[]) {
 				loadedCount++
 				newTexture.needsUpdate = true
 
-				if (loadedCount % 10 === 0 || loadedCount === playlists.length) {
-					console.log(`Loaded ${loadedCount}/${playlists.length} playlist images`)
+				if (loadedCount === playlists.length - 1) {
+					console.log('loading playlist images complete')
+					await sceneStoreActions.animatePlaylistsMaterialBlend()
 				}
 			}
 
