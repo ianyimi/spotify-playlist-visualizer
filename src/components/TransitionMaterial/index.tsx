@@ -1,8 +1,10 @@
 import { useValue } from "@legendapp/state/react";
 import { shaderMaterial } from "@react-three/drei";
-import { extend } from "@react-three/fiber";
-import { type ReactNode, useRef } from "react";
+import { extend, type ThreeElements } from "@react-three/fiber";
+import { type MutableRefObject, type ReactNode, useRef } from "react";
 import { type ShaderMaterial, type Texture, Vector2 } from "three";
+
+import type { ShaderMaterialProps } from "~/types";
 
 import { useFramerate } from "~/hooks/useFramerate";
 import { $sceneStore } from "~/stores/scene";
@@ -12,11 +14,12 @@ import vertexShader from "./vert.glsl"
 
 const TransitionMaterialImpl = shaderMaterial(
 	{
-		uResolution: new Vector2(window.innerWidth, window.innerHeight),
+		blend: 0,
+		blur: 0,
+		resolution: new Vector2(window.innerWidth, window.innerHeight),
 		uTextureA: null,
 		uTextureB: null,
 		uTime: 0,
-		uTransitionProgress: 0
 	},
 	vertexShader,
 	fragmentShader
@@ -25,35 +28,41 @@ const TransitionMaterialImpl = shaderMaterial(
 extend({ TransitionMaterial: TransitionMaterialImpl })
 
 export interface TransitionMaterialProps {
+	blend: number
+	blur: number
 	children?: ReactNode
-	uResolution?: Vector2
+	ref: MutableRefObject<ThreeElements["transitionMaterial"]>
+	resolution: Vector2
+	sdf?: Texture
+	size?: number
 	uTextureA?: null | Texture
 	uTextureB?: null | Texture
-	uTransitionProgress?: number
 }
 
 export default function TransitionMaterial({
+	blend,
+	blur,
 	children,
+	ref,
+	resolution,
 	uTextureA,
 	uTextureB,
-	uTransitionProgress
 }: TransitionMaterialProps) {
-	const stateTransitionProgress = useValue($sceneStore.sceneDepth.transitionProgress)
-	const shaderMaterial = useRef<ShaderMaterial>(null)
-
 	useFramerate(30, () => {
-		if (!shaderMaterial.current) { return }
-		shaderMaterial.current.uniforms.uTime!.value += 0.00001;
-		if (uTransitionProgress !== undefined) { return }
-		shaderMaterial.current.uniforms.uTransitionProgress!.value = stateTransitionProgress.get()
+		if (!ref.current || !ref.current.uniforms) { return }
+		ref.current.uniforms.uTime!.value += 0.00001;
+		// Don't override blend - it comes from the prop
+		ref.current.uniforms.blend!.value = blend
 	})
 
 	return (
 		<transitionMaterial
-			ref={shaderMaterial}
+			blend={blend}
+			blur={blur}
+			ref={ref}
+			resolution={resolution}
 			uTextureA={uTextureA}
 			uTextureB={uTextureB}
-			uTransitionProgress={uTransitionProgress ?? stateTransitionProgress.get()}
 		>
 			{children}
 		</transitionMaterial>

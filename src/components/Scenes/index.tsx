@@ -40,9 +40,15 @@ export default function InitialScene(props: GroupProps) {
 	const transitionProgress = useValue($sceneStore.sceneDepth.transitionProgress)
 	const screenMesh = useRef<Mesh>(null)
 	const [blend, setBlend] = useState(0)
+	const [materialBlend, setMaterialBlend] = useState(0)
 
 	useControls({
-		progress: {
+		'Material Blend': {
+			max: 1, min: 0, onChange: (v: number) => {
+				setMaterialBlend(v)
+			}, value: 1
+		},
+		'Screen Blend': {
 			max: 1, min: 0, onChange: (v: number) => {
 				transitionProgress.set(v)
 				setBlend(v)
@@ -65,22 +71,23 @@ export default function InitialScene(props: GroupProps) {
 				{/* 	</RenderTexture> */}
 				{/* </TransitionMaterial> */}
 				<PortalMaterial
-					// altScene={
-					// <RenderTexture attach="uTextureA">
-					// <SpotifyLogo position={[1.3, -1.25, 1]} rotation={[0, 0, 3 * Math.PI / 2 + 0.15]} scale={0.85} />
-					// <ambientLight intensity={100} />
-					// <directionalLight intensity={1} position={[5, 5, 5]} />
-					// <color args={["#05f505"]} attach="background" />
-					// </RenderTexture>
-					// }
+					altScene={
+						<group>
+							<SpotifyLogo position={[0.3, 1.5, 1]} rotation={[0, 0, 3 * Math.PI / 2 + 0.15]} scale={0.85} />
+							<ambientLight intensity={100} />
+							<directionalLight intensity={1} position={[5, 5, 5]} />
+							<color args={["#05f505"]} attach="background" />
+						</group>
+					}
 					blend={blend}
 					blur={0.2}
+					materialBlend={materialBlend}
 					// fragmentShader={frag}
 					// portalSceneRenderTarget="uTextureB"
 					// glslVersion="300 es"
 					resolution={1024}
 					uniforms={{
-						uResolution: new Uniform(new Vector2(window.innerWidth, window.innerHeight)),
+						resolution: new Uniform(new Vector2(window.innerWidth, window.innerHeight)),
 						uTime: new Uniform(0)
 					}}
 				// vertexShader={vert}

@@ -82,6 +82,6 @@ void main() {
 
     vec4 finalColor = mix(texB, texA, reveal);
     gl_FragColor = finalColor;
-    // #include <tonemapping_fragment>
+    #include <tonemapping_fragment>
     #include <colorspace_fragment>
 }

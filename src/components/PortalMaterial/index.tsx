@@ -5,6 +5,7 @@
 
 import { RenderTexture, useFBO, useIntersect } from '@react-three/drei'
 import { extend, type ReactThreeFiber, type ThreeElements, useFrame, useThree } from '@react-three/fiber'
+import dynamic from 'next/dynamic'
 import {
 	forwardRef,
 	type ForwardRefExoticComponent,
@@ -22,6 +23,7 @@ import {
 import {
 	Box3,
 	type BufferAttribute,
+	type Camera,
 	FloatType,
 	type GLSLVersion,
 	type IUniform,
@@ -31,6 +33,7 @@ import {
 	MeshBasicMaterial,
 	NearestFilter,
 	OrthographicCamera,
+	type PerspectiveCamera,
 	RedFormat,
 	REVISION,
 	type Scene,
@@ -46,6 +49,8 @@ import { shaderMaterial } from '~/utils/shaderMaterial'
 
 import frag from "./frag.glsl"
 import vert from "./vert.glsl"
+
+const TransitionMaterial = dynamic(() => import("../TransitionMaterial"), { ssr: false })
 
 type ForwardRefComponent<P, T> = ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<T>>
 
@@ -99,7 +104,7 @@ declare module '@react-three/fiber' {
 }
 
 export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'ref'> & {
-	altScene?: ThreeElements['portalMaterialImpl']["children"];
+	altScene: ThreeElements['portalMaterialImpl']["children"];
 	/** Mix the portals own scene with the world scene, 0 = world scene render,
 	 *  0.5 = both scenes render, 1 = portal scene renders, defaults to 0 */
 	blend?: number
@@ -110,8 +115,11 @@ export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'r
 
 	/** Optionally diable events inside the portal, defaults to false */
 	events?: boolean
-	/** Optionally provide a render target (attach) for the portal scene RenderTexture Material to use */
-	portalSceneRenderTarget?: string;
+
+	/** Mix the scenes displayed on the portal material,
+	 * 0 = world scene render, 0.5 = both scenes render, 1 = portal scene renders, defaults to 0 */
+	materialBlend?: number
+
 	/** Optional render priority, defaults to 0 */
 	renderPriority?: number
 	/** SDF resolution, the smaller the faster is the start-up time (default: 512) */
@@ -132,12 +140,13 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMate
 	(
 		{
 			altScene,
+			blend = 0,
 			blur = 0,
 			children,
 			eventPriority = 0,
 			events = undefined,
 			glslVersion,
-			portalSceneRenderTarget,
+			materialBlend = 0,
 			renderPriority = 0,
 			resolution = 512,
 			transitionFragmentShader,
@@ -150,18 +159,21 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMate
 	) => {
 		extend({ PortalMaterialImpl })
 
-		const ref = useRef<ThreeElements['portalMaterialImpl']>(null!)
-		const { gl, scene, setEvents, size, viewport } = useThree()
+		const ref = useRef<ThreeElements['transitionMaterial']>(null!)
+		const { camera, gl, scene, setEvents, size, viewport } = useThree()
 		const maskRenderTarget = useFBO(resolution, resolution)
+		const mainCameraRef = useRef<PerspectiveCamera>(camera as PerspectiveCamera)
 
 		const [priority, setPriority] = useState(0)
 		useFrame(() => {
-			// If blend is > 0 then the portal is being entered, the render-priority must change
-			const p = ref.current.blend > 0 ? Math.max(1, renderPriority) : 0
+			mainCameraRef.current = camera as PerspectiveCamera
+			// If blend (sceneBlend) is > 0 then the portal is being entered, the render-priority must change
+			const p = blend > 0 ? Math.max(1, renderPriority) : 0
 			if (priority !== p) { setPriority(p) }
 		})
 
 		useEffect(() => {
+			console.log('ref.current: ', ref.current)
 			if (events !== undefined) { setEvents({ enabled: !events }) }
 			// eslint-disable-next-line react-hooks/exhaustive-deps
 		}, [events])
@@ -247,23 +259,27 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMate
 		}, [])
 
 		return (
-			<portalMaterialImpl
+			<TransitionMaterial
 				attach="material"
-				blend={0}
+				blend={materialBlend}
 				blur={blur}
 				ref={ref}
-				resolution={[size.width * viewport.dpr, size.height * viewport.dpr]}
+				resolution={new Vector2(size.width * viewport.dpr, size.height * viewport.dpr)}
 				{...props}
 			>
-				{altScene}
+				<RenderTexture attach="uTextureA" frames={Infinity}>
+					{altScene}
+					<UseMainCamera mainCameraRef={mainCameraRef} />
+				</RenderTexture>
 				<RenderTexture
-					attach={portalSceneRenderTarget ?? "map"}
+					attach="uTextureB"
 					compute={compute}
 					eventPriority={eventPriority}
 					frames={visible ? Infinity : 0}
 					renderPriority={renderPriority}
 				>
 					{children}
+					<UseMainCamera mainCameraRef={mainCameraRef} />
 					<ManagePortalScene
 						events={events}
 						fragmentShader={transitionFragmentShader}
@@ -271,12 +287,13 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMate
 						material={ref}
 						priority={priority}
 						rootScene={scene}
+						sceneBlend={blend}
 						uniforms={uniforms}
 						vertexShader={transitionVertexShader}
 						worldUnits={worldUnits}
 					/>
 				</RenderTexture>
-			</portalMaterialImpl>
+			</TransitionMaterial>
 		)
 	}
 )
@@ -288,6 +305,7 @@ function ManagePortalScene({
 	material,
 	priority,
 	rootScene,
+	sceneBlend,
 	uniforms = {},
 	vertexShader,
 	worldUnits,
@@ -295,9 +313,10 @@ function ManagePortalScene({
 	events?: boolean;
 	fragmentShader?: string;
 	glslVersion?: GLSLVersion;
-	material: RefObject<ThreeElements['portalMaterialImpl']>
+	material: RefObject<ThreeElements['transitionMaterial']>
 	priority: number;
 	rootScene: Scene;
+	sceneBlend: number;
 	uniforms?: Record<string, IUniform<unknown>>;
 	vertexShader?: string;
 	worldUnits: boolean;
@@ -346,7 +365,7 @@ function ManagePortalScene({
 			if (!worldUnits) {
 				// If the portal renders exclusively the original scene needs to be updated
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-				if (priority && material.current?.blend === 1) { parent.updateWorldMatrix(true, false) }
+				if (priority && sceneBlend === 1) { parent.updateWorldMatrix(true, false) }
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
 				scene.matrixWorld.copy(parent.matrixWorld)
 			} else { scene.matrixWorld.identity() }
@@ -354,17 +373,17 @@ function ManagePortalScene({
 			// This bit is only necessary if the portal is blended, now it has a render-priority
 			// and will take over the render loop
 			if (priority) {
-				if (material.current?.blend > 0 && material.current?.blend < 1) {
+				if (sceneBlend > 0 && sceneBlend < 1) {
 					// If blend is ongoing (> 0 and < 1) then we need to render both the root scene
 					// and the portal scene, both will then be mixed in the quad from above
-					blend.value = material.current.blend
+					blend.value = sceneBlend
 					state.gl.setRenderTarget(buffer1)
 					state.gl.render(scene, state.camera)
 					state.gl.setRenderTarget(buffer2)
 					state.gl.render(rootScene, state.camera)
 					state.gl.setRenderTarget(null)
 					quad.render(state.gl)
-				} else if (material.current?.blend === 1) {
+				} else if (sceneBlend === 1) {
 					// However if blend is 1 we only need to render the portal scene
 					state.gl.render(scene, state.camera)
 				}
@@ -372,6 +391,30 @@ function ManagePortalScene({
 		}
 	}, priority)
 	return <></>
+}
+
+// This component syncs the RenderTexture's virtual camera with the main scene camera
+function UseMainCamera({ mainCameraRef }: { mainCameraRef: RefObject<PerspectiveCamera> }) {
+	const virtualCamera: PerspectiveCamera = useThree((state) => state.camera as PerspectiveCamera)
+
+	useFrame(() => {
+		const mainCamera = mainCameraRef.current
+		if (mainCamera && virtualCamera && mainCamera !== virtualCamera) {
+			// Copy main camera properties to virtual camera
+			virtualCamera.position.copy(mainCamera.position)
+			virtualCamera.rotation.copy(mainCamera.rotation)
+			virtualCamera.quaternion.copy(mainCamera.quaternion)
+			if (Object.hasOwn(mainCamera, "fov") && Object.hasOwn(virtualCamera, "fov")) {
+				virtualCamera.fov = mainCamera.fov
+				virtualCamera.aspect = mainCamera.aspect
+				virtualCamera.near = mainCamera.near
+				virtualCamera.far = mainCamera.far
+				virtualCamera.updateProjectionMatrix()
+			}
+		}
+	})
+
+	return null
 }
 
 export default PortalMaterial;
