@@ -55,10 +55,10 @@ highp float random2d(vec2 co) {
 }
 
 void main() {
-    // Flip Y-axis for RenderTexture
-    // vec2 flippedUv = vec2(vUv.x, 1.0 - vUv.y);
-    vec4 texA = texture2D(uTextureA, vUv);
-    vec4 texB = texture2D(uTextureB, vUv);
+    // Use screen-space coordinates like MeshPortalMaterial for proper alignment
+    vec2 screenUv = gl_FragCoord.xy / resolution.xy;
+    vec4 texA = texture2D(uTextureA, screenUv);
+    vec4 texB = texture2D(uTextureB, screenUv);
 
     // The visible face is in the XY plane
     vec2 pos2D = vPosition.xy;
@@ -85,8 +85,8 @@ void main() {
     float reveal = smoothstep(-0.075, -0.08, sdf);
 
     // Add noise to first scene texture
-    // float strength = (0.3 + 0.7 * noise1d(0.3 * uTime)) * 200. / resolution.x;
-    // texA.rgb += vec3(5.0 * strength * (random2d(uv + 1.133001 * vec2(uTime, 1.13)) - 0.5));
+    float strength = (0.3 + 0.7 * noise1d(0.3 * uTime)) * 200. / resolution.x;
+    texA.rgb += vec3(5.0 * strength * (random2d(uv + 1.133001 * vec2(uTime, 1.13)) - 0.5));
 
     vec4 finalColor = mix(texA, texB, reveal);
     gl_FragColor = finalColor;

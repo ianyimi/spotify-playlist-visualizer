@@ -27,7 +27,7 @@ const TransitionMaterialImpl = shaderMaterial(
 
 extend({ TransitionMaterial: TransitionMaterialImpl })
 
-export interface TransitionMaterialProps {
+export interface TransitionMaterialProps extends ShaderMaterialProps {
 	blend: number
 	blur: number
 	children?: ReactNode
@@ -47,6 +47,7 @@ export default function TransitionMaterial({
 	resolution,
 	uTextureA,
 	uTextureB,
+	...shaderProps
 }: TransitionMaterialProps) {
 	useFramerate(30, () => {
 		if (!ref.current || !ref.current.uniforms) { return }
@@ -63,6 +64,7 @@ export default function TransitionMaterial({
 			resolution={resolution}
 			uTextureA={uTextureA}
 			uTextureB={uTextureB}
+			{...shaderProps}
 		>
 			{children}
 		</transitionMaterial>

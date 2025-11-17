@@ -4,7 +4,7 @@
 // https://github.com/N8python/maskBlur
 
 import { RenderTexture, useFBO, useIntersect } from '@react-three/drei'
-import { extend, type ReactThreeFiber, type ThreeElements, useFrame, useThree } from '@react-three/fiber'
+import { type ReactThreeFiber, type ThreeElements, useFrame, useThree } from '@react-three/fiber'
 import dynamic from 'next/dynamic'
 import {
 	forwardRef,
@@ -23,7 +23,6 @@ import {
 import {
 	Box3,
 	type BufferAttribute,
-	type Camera,
 	FloatType,
 	type GLSLVersion,
 	type IUniform,
@@ -45,63 +44,9 @@ import {
 } from 'three'
 import { FullScreenQuad } from 'three-stdlib'
 
-import { shaderMaterial } from '~/utils/shaderMaterial'
-
-import frag from "./frag.glsl"
-import vert from "./vert.glsl"
-
-const TransitionMaterial = dynamic(() => import("../TransitionMaterial"), { ssr: false })
-
-type ForwardRefComponent<P, T> = ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<T>>
-
 const version = parseInt(REVISION.replace(/\D+/g, ''))
 
-const PortalMaterialImpl = /* @__PURE__ */ shaderMaterial(
-	{
-		blend: 0,
-		blur: 0,
-		map: null,
-		resolution: /* @__PURE__ */ new Vector2(),
-		sdf: null,
-		size: 0,
-	},
-	`varying vec2 vUv;
-   void main() {
-     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-     vUv = uv;
-   }`,
-	`uniform sampler2D sdf;
-   uniform sampler2D map;
-   uniform float blur;
-   uniform float size;
-   uniform float time;
-   uniform vec2 resolution;
-   varying vec2 vUv;
-   #include <packing>
-   void main() {
-     vec2 uv = gl_FragCoord.xy / resolution.xy;
-     vec4 t = texture2D(map, uv);
-     float k = blur;
-     float d = texture2D(sdf, vUv).r/size;
-     float alpha = 1.0 - smoothstep(0.0, 1.0, clamp(d/k + 1.0, 0.0, 1.0));
-     gl_FragColor = vec4(t.rgb, blur == 0.0 ? t.a : t.a * alpha);
-     #include <tonemapping_fragment>
-     #include <${version >= 154 ? 'colorspace_fragment' : 'encodings_fragment'}>
-   }`
-)
-
-declare module '@react-three/fiber' {
-	interface ThreeElements {
-		portalMaterialImpl: ThreeElements['shaderMaterial'] & {
-			blend: number
-			blur: number
-			map?: Texture
-			resolution: ReactThreeFiber.Vector2
-			sdf?: Texture
-			size?: number
-		}
-	}
-}
+const TransitionMaterial = dynamic(() => import("../TransitionMaterial"), { ssr: false })
 
 export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'ref'> & {
 	altScene: ThreeElements['portalMaterialImpl']["children"];
@@ -134,7 +79,9 @@ export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'r
 	worldUnits?: boolean
 }
 
-const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMaterialImpl']> =
+type ForwardRefComponent<P, T> = ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<T>>
+
+const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['transitionMaterial']> =
   // eslint-disable-next-line react/display-name
   /* @__PURE__ */ forwardRef(
 	(
@@ -153,11 +100,10 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMate
 			transitionVertexShader,
 			uniforms,
 			worldUnits = false,
-			...props
+			...shaderProps
 		},
 		fref
 	) => {
-		extend({ PortalMaterialImpl })
 
 		const ref = useRef<ThreeElements['transitionMaterial']>(null!)
 		const { camera, gl, scene, setEvents, size, viewport } = useThree()
@@ -173,7 +119,6 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMate
 		})
 
 		useEffect(() => {
-			console.log('ref.current: ', ref.current)
 			if (events !== undefined) { setEvents({ enabled: !events }) }
 			// eslint-disable-next-line react-hooks/exhaustive-deps
 		}, [events])
@@ -265,11 +210,10 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMate
 				blur={blur}
 				ref={ref}
 				resolution={new Vector2(size.width * viewport.dpr, size.height * viewport.dpr)}
-				{...props}
+				{...shaderProps}
 			>
 				<RenderTexture attach="uTextureA" frames={Infinity}>
 					{altScene}
-					<UseMainCamera mainCameraRef={mainCameraRef} />
 				</RenderTexture>
 				<RenderTexture
 					attach="uTextureB"
@@ -279,7 +223,6 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['portalMate
 					renderPriority={renderPriority}
 				>
 					{children}
-					<UseMainCamera mainCameraRef={mainCameraRef} />
 					<ManagePortalScene
 						events={events}
 						fragmentShader={transitionFragmentShader}
@@ -341,7 +284,19 @@ function ManagePortalScene({
 		const blend = { value: 0 }
 		const quad = new FullScreenQuad(
 			new ShaderMaterial({
-				fragmentShader: /*glsl*/ fragmentShader ?? frag,
+				fragmentShader: fragmentShader ?? /*glsl*/ `
+          uniform sampler2D a;
+          uniform sampler2D b;
+          uniform float blend;
+          varying vec2 vUv;
+          #include <packing>
+          void main() {
+            vec4 ta = texture2D(a, vUv);
+            vec4 tb = texture2D(b, vUv);
+            gl_FragColor = mix(tb, ta, blend);
+            #include <tonemapping_fragment>
+            #include <${version >= 154 ? 'colorspace_fragment' : 'encodings_fragment'}>
+          }`,
 				glslVersion,
 				uniforms: {
 					a: { value: buffer1.texture },
@@ -349,7 +304,12 @@ function ManagePortalScene({
 					blend,
 					...uniforms
 				},
-				vertexShader: /*glsl*/ vertexShader ?? vert
+				vertexShader: vertexShader ?? /*glsl*/ `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+          }`
 			})
 		)
 		return [quad, blend]
@@ -391,30 +351,6 @@ function ManagePortalScene({
 		}
 	}, priority)
 	return <></>
-}
-
-// This component syncs the RenderTexture's virtual camera with the main scene camera
-function UseMainCamera({ mainCameraRef }: { mainCameraRef: RefObject<PerspectiveCamera> }) {
-	const virtualCamera: PerspectiveCamera = useThree((state) => state.camera as PerspectiveCamera)
-
-	useFrame(() => {
-		const mainCamera = mainCameraRef.current
-		if (mainCamera && virtualCamera && mainCamera !== virtualCamera) {
-			// Copy main camera properties to virtual camera
-			virtualCamera.position.copy(mainCamera.position)
-			virtualCamera.rotation.copy(mainCamera.rotation)
-			virtualCamera.quaternion.copy(mainCamera.quaternion)
-			if (Object.hasOwn(mainCamera, "fov") && Object.hasOwn(virtualCamera, "fov")) {
-				virtualCamera.fov = mainCamera.fov
-				virtualCamera.aspect = mainCamera.aspect
-				virtualCamera.near = mainCamera.near
-				virtualCamera.far = mainCamera.far
-				virtualCamera.updateProjectionMatrix()
-			}
-		}
-	})
-
-	return null
 }
 
 export default PortalMaterial;
