@@ -38,15 +38,8 @@ export default function InitialScene(props: GroupProps) {
 	const mblend = useValue($sceneStore.playlists.materialBlendValue)
 	const screenMesh = useRef<Mesh>(null)
 	const [blend, setBlend] = useState(0)
-	const [_materialBlend, setMaterialBlend] = useState(0)
-	console.log('mblend: ', mblend)
 
 	useControls({
-		'Material Blend': {
-			max: 1, min: 0, onChange: (v: number) => {
-				setMaterialBlend(v)
-			}, value: mblend
-		},
 		'Screen Blend': {
 			max: 1, min: 0, onChange: (v: number) => {
 				setBlend(v)
