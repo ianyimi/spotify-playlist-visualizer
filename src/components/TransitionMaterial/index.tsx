@@ -1,13 +1,11 @@
-import { useValue } from "@legendapp/state/react";
 import { shaderMaterial } from "@react-three/drei";
 import { extend, type ThreeElements } from "@react-three/fiber";
-import { type MutableRefObject, type ReactNode, useRef } from "react";
-import { type ShaderMaterial, type Texture, Vector2 } from "three";
+import { type MutableRefObject, type ReactNode } from "react";
+import { type Texture, Vector2 } from "three";
 
 import type { ShaderMaterialProps } from "~/types";
 
 import { useFramerate } from "~/hooks/useFramerate";
-import { $sceneStore } from "~/stores/scene";
 
 import fragmentShader from "./frag.glsl"
 import vertexShader from "./vert.glsl"

@@ -4,7 +4,7 @@
 // https://github.com/N8python/maskBlur
 
 import { RenderTexture, useFBO, useIntersect } from '@react-three/drei'
-import { type ReactThreeFiber, type ThreeElements, useFrame, useThree } from '@react-three/fiber'
+import { type ThreeElements, useFrame, useThree } from '@react-three/fiber'
 import dynamic from 'next/dynamic'
 import {
 	forwardRef,
