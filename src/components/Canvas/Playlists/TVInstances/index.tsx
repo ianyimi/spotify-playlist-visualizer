@@ -45,11 +45,6 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 
 	const textureArray = usePlaylistsTextureArray(playlists)
 
-	console.log('InstancedVintageTelevision render:', {
-		playlistCount: playlists.length,
-		textureArray: textureArray ? 'loaded' : 'null'
-	})
-
 	useFramerate(30, () => {
 		if (!shaderMaterial.current) { return };
 		shaderMaterial.current.uniforms.uTime!.value += 0.01
@@ -61,7 +56,7 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 
 	return (
 		<group {...groupProps}>
-			<Instances dispose={null} geometry={nodes.TV.geometry} material={materials["TV_Chayka-206"]}>
+			<Instances dispose={null} frustumCulled={false} geometry={nodes.TV.geometry} material={materials["TV_Chayka-206"]}>
 				{playlistsWithImages.map((p, i) => {
 					return (
 						<Instance
@@ -72,7 +67,7 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 					)
 				})}
 			</Instances>
-			<Instances geometry={nodes.TVSCREEN.geometry}>
+			<Instances frustumCulled={false} geometry={nodes.TVSCREEN.geometry}>
 				<shaderMaterial
 					fragmentShader={frag}
 					glslVersion="300 es"
@@ -88,7 +83,7 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 					return <InstancedScreenMaterial index={i} key={`tv-screen-instance-${i}`} playlist={p} playlistCount={playlists.length} />
 				})}
 			</Instances>
-			<Instances geometry={nodes.TVSCREENBEZEL.geometry} material={materials["TV_Chayka-206"]}>
+			<Instances frustumCulled={false} geometry={nodes.TVSCREENBEZEL.geometry} material={materials["TV_Chayka-206"]}>
 				{playlistsWithImages.map((p, i) => {
 					return (
 						<Instance

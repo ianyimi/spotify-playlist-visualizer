@@ -5,13 +5,15 @@ Command: npx gltfjsx@6.5.3 ./public/staging/vintageTelevision.glb -d -t -v -p 4
 
 import { useValue } from '@legendapp/state/react'
 import { useGLTF } from '@react-three/drei'
+import { useThree } from '@react-three/fiber'
 import { useControls } from "leva"
-import { useRef, useState } from 'react'
-import { type Mesh, type MeshStandardMaterial, Uniform, Vector2 } from 'three'
+import { useEffect, useRef, useState } from 'react'
+import { DoubleSide, type Group, type Mesh, type MeshStandardMaterial, Uniform, Vector2, Vector3 } from 'three'
 import { type GLTF } from 'three-stdlib'
 
 import type { GroupProps } from '~/types'
 
+// import { useFramerate } from '~/hooks/useFramerate'
 import SpotifyLogo from '~/models/Spotify'
 import { $sceneStore } from '~/stores/scene'
 
@@ -35,11 +37,19 @@ type GLTFResult = GLTF & {
 
 export default function InitialScene(props: GroupProps) {
 	const { materials, nodes } = useGLTF('models/tv.glb') as unknown as GLTFResult
+	const { camera } = useThree()
+	const cameraPos = useRef(new Vector3())
 	const mblend = useValue($sceneStore.playlists.materialBlendValue)
 	const screenMesh = useRef<Mesh>(null)
+	const groupRef = useRef<Group>(null)
 	const [blend, setBlend] = useState(0)
 
 	useControls({
+		// 'Material Blend': {
+		// 	max: 1, min: 0, onChange: (v: number) => {
+		// 		$sceneStore.playlists.materialBlendValue.set(v)
+		// 	}, value: mblend
+		// },
 		'Screen Blend': {
 			max: 1, min: 0, onChange: (v: number) => {
 				setBlend(v)
@@ -47,8 +57,19 @@ export default function InitialScene(props: GroupProps) {
 		}
 	})
 
+	// useFramerate(30, () => {
+	// 	if (!groupRef.current || !cameraPos.current || groupRef.current.position.z >= 3) { return }
+	// 	const targetVector = cameraPos.current.add(new Vector3(0.15, 0, 1))
+	// 	groupRef.current.position.lerp(targetVector, 0.001)
+	// })
+
+	useEffect(() => {
+		if (!camera) { return }
+		cameraPos.current.copy(camera.position)
+	}, [camera])
+
 	return (
-		<group {...props} dispose={null}>
+		<group ref={groupRef} {...props} dispose={null}>
 			<mesh geometry={nodes.TV.geometry} material={materials['TV_Chayka-206']} position={[-0.0011, 0.0054, -0.0071]} scale={5.0041} />
 			<mesh geometry={nodes.TVSCREEN.geometry} position={[-0.0011, 0.0054, -0.0071]} ref={screenMesh} scale={5.0809}>
 				<PortalMaterial
@@ -65,6 +86,7 @@ export default function InitialScene(props: GroupProps) {
 					fragmentShader={frag}
 					materialBlend={mblend}
 					resolution={1024}
+					side={DoubleSide}
 					transitionFragmentShader={transitionFrag}
 					transitionVertexShader={transitionVert}
 					uniforms={{

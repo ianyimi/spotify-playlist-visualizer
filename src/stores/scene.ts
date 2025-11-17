@@ -56,10 +56,8 @@ export const $sceneStoreActions = observable<SceneStoreActions>({
 	animatePlaylistsMaterialBlend: async () => {
 		const playlistsMaterialBlend = $sceneStore.playlists.materialBlend.get()
 		if (playlistsMaterialBlend.get() === 0) {
-			console.log('animating blend value to 1')
 			await playlistsMaterialBlend.start(1)
 		} else if (playlistsMaterialBlend.get() === 1) {
-			console.log('animating blend value to 0')
 			await playlistsMaterialBlend.start(0)
 		}
 	},
