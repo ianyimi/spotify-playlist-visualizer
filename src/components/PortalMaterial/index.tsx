@@ -49,7 +49,7 @@ const version = parseInt(REVISION.replace(/\D+/g, ''))
 const TransitionMaterial = dynamic(() => import("../TransitionMaterial"), { ssr: false })
 
 export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'ref'> & {
-	altScene: ThreeElements['portalMaterialImpl']["children"];
+	altScene?: ThreeElements['portalMaterialImpl']["children"];
 	/** Mix the portals own scene with the world scene, 0 = world scene render,
 	 *  0.5 = both scenes render, 1 = portal scene renders, defaults to 0 */
 	blend?: number
@@ -75,6 +75,9 @@ export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'r
 	/** Optionally provide a vertex shader for the RenderTexture Material to use */
 	transitionVertexShader?: string;
 
+	/** Optionally provide a texture to render instead of an altScene to be rendered while materialBlend & blend values are both at 0 */
+	uTextureA?: Texture;
+
 	/** By default portals use relative coordinates, contents are affects by the local matrix transform */
 	worldUnits?: boolean
 }
@@ -99,6 +102,7 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['transition
 			transitionFragmentShader,
 			transitionVertexShader,
 			uniforms,
+			uTextureA,
 			worldUnits = false,
 			...shaderProps
 		},
@@ -212,9 +216,9 @@ const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['transition
 				resolution={new Vector2(size.width * viewport.dpr, size.height * viewport.dpr)}
 				{...shaderProps}
 			>
-				<RenderTexture attach="uTextureA" frames={Infinity}>
+				{!uTextureA && altScene && <RenderTexture attach="uTextureA" frames={Infinity}>
 					{altScene}
-				</RenderTexture>
+				</RenderTexture>}
 				<RenderTexture
 					attach="uTextureB"
 					compute={compute}
