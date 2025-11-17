@@ -100,6 +100,7 @@ export function usePlaylistsTextureArray(playlists: Playlist[]) {
 		return () => {
 			newTexture.dispose()
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [playlists])
 
 	return texture

@@ -6,14 +6,14 @@ Command: npx gltfjsx@6.5.3 ./public/staging/vintageTelevision.glb -d -t -v -p 4
 import { useValue } from '@legendapp/state/react'
 import { useGLTF } from '@react-three/drei'
 import { useControls } from "leva"
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { type Mesh, type MeshStandardMaterial, Uniform, Vector2 } from 'three'
 import { type GLTF } from 'three-stdlib'
 
 import type { GroupProps } from '~/types'
 
 import SpotifyLogo from '~/models/Spotify'
-import { $sceneStore, $sceneStoreActions } from '~/stores/scene'
+import { $sceneStore } from '~/stores/scene'
 
 import PortalMaterial from "../PortalMaterial"
 import frag from "../TransitionMaterial/frag.glsl"
@@ -36,10 +36,9 @@ type GLTFResult = GLTF & {
 export default function InitialScene(props: GroupProps) {
 	const { materials, nodes } = useGLTF('models/tv.glb') as unknown as GLTFResult
 	const mblend = useValue($sceneStore.playlists.materialBlendValue)
-	const sceneStoreActions = useValue($sceneStoreActions)
 	const screenMesh = useRef<Mesh>(null)
 	const [blend, setBlend] = useState(0)
-	const [materialBlend, setMaterialBlend] = useState(0)
+	const [_materialBlend, setMaterialBlend] = useState(0)
 	console.log('mblend: ', mblend)
 
 	useControls({
