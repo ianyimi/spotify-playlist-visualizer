@@ -1,5 +1,7 @@
+import type { Camera } from "three";
+
 import { observable } from "@legendapp/state";
-import { SpringValue } from "@react-spring/web"
+import { type SpringUpdate, SpringValue } from "@react-spring/web"
 
 // Scene depth levels:
 // 0 = Login TV (outermost)
@@ -13,11 +15,22 @@ export type TransitionState =
 	| "loading"        // Loading data for next scene
 	| "transitioning"  // Shader transition + camera animation in progress
 
+export const SCENE_STATUSES = {
+	closed: "closed",
+	closing: "closing",
+	open: "open",
+	opening: "opening"
+} as const
+export type SceneStatus = typeof SCENE_STATUSES[keyof typeof SCENE_STATUSES]
+
 interface SceneStore {
+	camera?: Camera,
 	playlists: {
 		materialBlend: SpringValue<number>
 		materialBlendValue: number
 		sceneBlend: SpringValue<number>
+		sceneBlendValue: number
+		sceneStatus: SceneStatus;
 	},
 	sceneReady: boolean;
 }
@@ -40,26 +53,47 @@ export const $sceneStore = observable<SceneStore>({
 			config: {
 				duration: 1500,
 				friction: 3,
-				mass: 5
+				mass: 5,
+			},
+			// @ts-expect-error react spring mismatched onChange type
+			onChange: (result: number) => {
+				$sceneStore.playlists.sceneBlendValue.set(result)
 			}
-		})
+		}),
+		sceneBlendValue: 0,
+		sceneStatus: SCENE_STATUSES.closed,
 	},
 	sceneReady: false,
 });
 
 interface SceneStoreActions {
-	animatePlaylistsMaterialBlend: () => Promise<void>
+	animatePlaylistsMaterialBlend: (props?: SpringUpdate<number>) => Promise<void>
+	animatePlaylistsSceneBlend: (props?: SpringUpdate<number>) => Promise<void>
+	setCamera: (camera: Camera) => void
+	setPlaylistsSceneStatus: (status: SceneStatus) => void
 	setSceneReady: () => void
 }
 
 export const $sceneStoreActions = observable<SceneStoreActions>({
-	animatePlaylistsMaterialBlend: async () => {
+	animatePlaylistsMaterialBlend: async (props) => {
 		const playlistsMaterialBlend = $sceneStore.playlists.materialBlend.get()
-		if (playlistsMaterialBlend.get() === 0) {
-			await playlistsMaterialBlend.start(1)
-		} else if (playlistsMaterialBlend.get() === 1) {
-			await playlistsMaterialBlend.start(0)
-		}
+		await playlistsMaterialBlend.start({
+			to: playlistsMaterialBlend.get() === 0 ? 1 : 0,
+			...props
+		})
+	},
+	animatePlaylistsSceneBlend: async (props) => {
+		const playlistsSceneBlend = $sceneStore.playlists.sceneBlend.get()
+		await playlistsSceneBlend.start({
+			to: playlistsSceneBlend.get() === 0 ? 1 : 0,
+			...props
+		})
+	},
+	setCamera: (camera: Camera) => {
+		$sceneStore.camera.set(camera)
+	},
+	setPlaylistsSceneStatus: (status) => {
+		$sceneStore.playlists.sceneStatus.set(status)
 	},
 	setSceneReady: () => {
 		$sceneStore.sceneReady.set(true)

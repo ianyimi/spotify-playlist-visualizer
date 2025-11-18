@@ -7,6 +7,7 @@ Source: https://sketchfab.com/3d-models/spotify-logo-090826d4a192443c89453cf256b
 Title: Spotify Logo
 */
 
+import { useValue } from '@legendapp/state/react'
 import { useGLTF } from '@react-three/drei'
 import { useRef } from 'react'
 import { type Group, type Mesh, type MeshStandardMaterial } from 'three'
@@ -14,7 +15,9 @@ import { type GLTF } from 'three-stdlib'
 
 import type { GroupProps } from '~/types'
 
+import { useSession } from '~/auth/client'
 import { useFramerate } from '~/hooks/useFramerate'
+import { $sceneStore } from '~/stores/scene'
 
 type GLTFResult = GLTF & {
 	materials: {
@@ -29,13 +32,19 @@ type GLTFResult = GLTF & {
 	}
 }
 
-export default function SpotifyLogo({ rotate = false, ...groupProps }: GroupProps & { rotate?: boolean }) {
+export default function SpotifyLogo({ ...groupProps }: GroupProps & { rotate?: boolean }) {
 	const { materials, nodes } = useGLTF('models/spotify.glb') as unknown as GLTFResult
+	const { data: auth } = useSession()
+	const playlistsSceneStatus = useValue($sceneStore.playlists.sceneStatus)
 	const groupRef = useRef<Group>(null)
 
 	useFramerate(30, () => {
-		if (!groupRef.current || !rotate) { return; }
-		groupRef.current.rotation.x += 0.025
+		if (!groupRef.current || !auth?.session) { return }
+		if (playlistsSceneStatus === "closing") {
+			groupRef.current.rotation.z = 0
+		} else {
+			groupRef.current.rotation.z -= 0.025
+		}
 	})
 
 	return (
