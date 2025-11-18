@@ -55,7 +55,7 @@ export default function Scene({ onProgressChange, onSceneReady }: SceneProps) {
 
 	const canvasProps = {
 		camera: {
-			far: 100,
+			far: 150,
 			fov: 75,
 			near: 0.01,
 			position: new Vector3(0, 0, 5),

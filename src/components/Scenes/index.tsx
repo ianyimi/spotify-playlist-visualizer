@@ -5,15 +5,16 @@ Command: npx gltfjsx@6.5.3 ./public/staging/vintageTelevision.glb -d -t -v -p 4
 
 import { useValue } from '@legendapp/state/react'
 import { useGLTF } from '@react-three/drei'
-import { useControls } from "leva"
-import { useRef, useState } from 'react'
-import { type Mesh, type MeshStandardMaterial, Uniform, Vector2 } from 'three'
+import { useThree } from '@react-three/fiber'
+import { useEffect, useRef } from 'react'
+import { DoubleSide, type Group, type Mesh, type MeshStandardMaterial, Uniform, Vector2, Vector3 } from 'three'
 import { type GLTF } from 'three-stdlib'
 
 import type { GroupProps } from '~/types'
 
+import { useFramerate } from '~/hooks/useFramerate'
 import SpotifyLogo from '~/models/Spotify'
-import { $sceneStore } from '~/stores/scene'
+import { $sceneStore, $sceneStoreActions } from '~/stores/scene'
 
 import PortalMaterial from "../PortalMaterial"
 import frag from "../TransitionMaterial/frag.glsl"
@@ -35,20 +36,57 @@ type GLTFResult = GLTF & {
 
 export default function InitialScene(props: GroupProps) {
 	const { materials, nodes } = useGLTF('models/tv.glb') as unknown as GLTFResult
-	const mblend = useValue($sceneStore.playlists.materialBlendValue)
+	const { camera } = useThree()
+	const sceneStoreActions = useValue($sceneStoreActions)
+	const cameraPos = useRef(new Vector3())
+	const initialGroupPosition = useRef(new Vector3())
+	const savedInitialGroupPos = useRef(false)
 	const screenMesh = useRef<Mesh>(null)
-	const [blend, setBlend] = useState(0)
+	const groupRef = useRef<Group>(null)
 
-	useControls({
-		'Screen Blend': {
-			max: 1, min: 0, onChange: (v: number) => {
-				setBlend(v)
-			}, value: 0
+	const mblend = useValue($sceneStore.playlists.materialBlendValue)
+	const sblend = useValue($sceneStore.playlists.sceneBlendValue)
+	const playlistsSceneStatus = useValue($sceneStore.playlists.sceneStatus)
+
+	useFramerate(30, () => {
+		if (!groupRef.current) { return }
+		if (playlistsSceneStatus === "opening") {
+			if (groupRef.current.position.z >= 3.0) {
+				return sceneStoreActions.setPlaylistsSceneStatus("open")
+			}
+			const targetVector = cameraPos.current.add(new Vector3(0.15, 0, 1))
+			groupRef.current.position.lerp(targetVector, 0.001)
+			return;
 		}
+		if (playlistsSceneStatus === "closing") {
+			if (groupRef.current.position.z <= 0) {
+				return sceneStoreActions.setPlaylistsSceneStatus("closed")
+			}
+			groupRef.current.position.lerp(initialGroupPosition.current, 0.015)
+			return
+		}
+		//
 	})
 
+	useEffect(() => {
+		if (!groupRef.current || savedInitialGroupPos.current) {
+			return
+		}
+		initialGroupPosition.current.copy(groupRef.current.position)
+		savedInitialGroupPos.current = true
+	}, [groupRef])
+
+	useEffect(() => {
+		if (!camera) { return }
+		if (!$sceneStore.camera.get()) {
+			sceneStoreActions.setCamera(camera)
+		}
+		cameraPos.current.copy(camera.position)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [camera])
+
 	return (
-		<group {...props} dispose={null}>
+		<group ref={groupRef} {...props} dispose={null}>
 			<mesh geometry={nodes.TV.geometry} material={materials['TV_Chayka-206']} position={[-0.0011, 0.0054, -0.0071]} scale={5.0041} />
 			<mesh geometry={nodes.TVSCREEN.geometry} position={[-0.0011, 0.0054, -0.0071]} ref={screenMesh} scale={5.0809}>
 				<PortalMaterial
@@ -60,11 +98,12 @@ export default function InitialScene(props: GroupProps) {
 							<color args={["#05f505"]} attach="background" />
 						</group>
 					}
-					blend={blend}
+					blend={sblend}
 					blur={0.2}
 					fragmentShader={frag}
 					materialBlend={mblend}
 					resolution={1024}
+					side={DoubleSide}
 					transitionFragmentShader={transitionFrag}
 					transitionVertexShader={transitionVert}
 					uniforms={{
@@ -72,6 +111,7 @@ export default function InitialScene(props: GroupProps) {
 						uTime: new Uniform(0)
 					}}
 					vertexShader={vert}
+				// wireframe
 				>
 					<PlaylistsScene />
 				</PortalMaterial>

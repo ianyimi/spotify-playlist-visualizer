@@ -4,7 +4,7 @@ import { DataArrayTexture, LinearFilter, RGBAFormat } from "three"
 
 import type { Playlist } from "~/convex/types"
 
-import { $sceneStoreActions } from "~/stores/scene"
+import { $sceneStore, $sceneStoreActions } from "~/stores/scene"
 
 export function usePlaylistsTextureArray(playlists: Playlist[]) {
 	const [texture, setTexture] = useState<DataArrayTexture | null>(null)
@@ -16,8 +16,6 @@ export function usePlaylistsTextureArray(playlists: Playlist[]) {
 		const size = 512
 		const depth = playlists.length
 
-		console.log(`Creating texture array for ${depth} playlists`)
-
 		const data = new Uint8Array(size * size * depth * 4)
 		const newTexture = new DataArrayTexture(data, size, size, depth)
 		newTexture.format = RGBAFormat
@@ -25,13 +23,6 @@ export function usePlaylistsTextureArray(playlists: Playlist[]) {
 		newTexture.magFilter = LinearFilter
 
 		setTexture(newTexture)
-
-		console.log('Texture array created:', {
-			width: newTexture.image.width,
-			depth: newTexture.image.depth,
-			format: newTexture.format,
-			height: newTexture.image.height
-		})
 
 		// Load playlist images
 		let loadedCount = 0
@@ -73,7 +64,29 @@ export function usePlaylistsTextureArray(playlists: Playlist[]) {
 
 				if (loadedCount === playlists.length - 1) {
 					console.log('loading playlist images complete')
-					await sceneStoreActions.animatePlaylistsMaterialBlend()
+					setTimeout(() => {
+						sceneStoreActions.setPlaylistsSceneStatus("opening")
+					}, 750)
+					let trigger = false
+					await sceneStoreActions.animatePlaylistsMaterialBlend({
+						config: {
+							duration: 2500
+						},
+						// @ts-expect-error react spring mismatched onChange type
+						onChange: (result: number) => {
+							$sceneStore.playlists.materialBlendValue.set(result)
+							if (!trigger && result >= 0.75) {
+								void sceneStoreActions.animatePlaylistsSceneBlend({
+									config: {
+										duration: 1000
+									},
+									to: 1
+								})
+								trigger = true
+							}
+						},
+						to: 1
+					})
 				}
 			}
 
