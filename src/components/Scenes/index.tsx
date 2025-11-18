@@ -5,7 +5,7 @@ Command: npx gltfjsx@6.5.3 ./public/staging/vintageTelevision.glb -d -t -v -p 4
 
 import { useValue } from '@legendapp/state/react'
 import { useGLTF } from '@react-three/drei'
-import { type ThreeElements, useFrame, useThree } from '@react-three/fiber'
+import { type ThreeElements, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { DoubleSide, type Group, type Mesh, type MeshStandardMaterial, ShaderMaterial, Uniform, Vector2, Vector3 } from 'three'
 import { FullScreenQuad, type GLTF } from 'three-stdlib'

@@ -4,7 +4,7 @@ import { DataArrayTexture, LinearFilter, RGBAFormat } from "three"
 
 import type { Playlist } from "~/convex/types"
 
-import { $sceneStore, $sceneStoreActions } from "~/stores/scene"
+import { $sceneStoreActions } from "~/stores/scene"
 
 export function usePlaylistsTextureArray(playlists: Playlist[]) {
 	const [texture, setTexture] = useState<DataArrayTexture | null>(null)
@@ -63,7 +63,6 @@ export function usePlaylistsTextureArray(playlists: Playlist[]) {
 				newTexture.needsUpdate = true
 
 				if (loadedCount === playlists.length - 1) {
-					console.log('loading playlist images complete')
 					setTimeout(() => {
 						sceneStoreActions.setPlaylistsSceneStatus("opening")
 					}, 750)

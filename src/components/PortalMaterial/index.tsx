@@ -3,7 +3,6 @@
 //   drcmda, https://twitter.com/0xca0a
 // https://github.com/N8python/maskBlur
 
-import { useValue } from '@legendapp/state/react'
 import { RenderTexture, useFBO, useIntersect } from '@react-three/drei'
 import { type ThreeElements, useFrame, useThree } from '@react-three/fiber'
 import dynamic from 'next/dynamic'
@@ -40,8 +39,6 @@ import {
 } from 'three'
 import { FullScreenQuad } from 'three-stdlib'
 
-import { $sceneStoreActions } from '~/stores/scene'
-
 const version = parseInt(REVISION.replace(/\D+/g, ''))
 
 const TransitionMaterial = dynamic(() => import("../TransitionMaterial"), { ssr: false })
@@ -50,7 +47,7 @@ export type PortalProps = ThreeElements["transitionMaterial"] & {
 	altScene?: ThreeElements['transitionMaterial']["children"];
 	/** Mix the portals own scene with the world scene, 0 = world scene render,
 	 *  0.5 = both scenes render, 1 = portal scene renders, defaults to 0 */
-	blend?: number
+	blend: number
 	/** Edge fade blur, 0 = no blur (default) */
 	blur?: number
 	/** Optional event priority, defaults to 0 */
@@ -102,7 +99,6 @@ function ManagePortalScene({
 	vertexShader?: string;
 	worldUnits: boolean;
 }) {
-	const gl = useThree((state) => state.gl)
 	const scene = useThree((state) => state.scene)
 	const setEvents = useThree((state) => state.setEvents)
 	const buffer1 = useFBO()
@@ -205,6 +201,7 @@ function ManagePortalScene({
 
 function PortalMaterial({
 	altScene,
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	blend,
 	blur = 0,
 	children,
@@ -223,7 +220,6 @@ function PortalMaterial({
 	...shaderProps
 }: PortalProps) {
 
-	// const ref = useRef<ThreeElements['transitionMaterial']>(null!)
 	const { camera, gl, scene, setEvents, size, viewport } = useThree()
 	const maskRenderTarget = useFBO(resolution, resolution)
 	const mainCameraRef = useRef<PerspectiveCamera>(camera as PerspectiveCamera)
