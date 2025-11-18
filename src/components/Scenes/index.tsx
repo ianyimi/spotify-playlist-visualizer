@@ -5,10 +5,10 @@ Command: npx gltfjsx@6.5.3 ./public/staging/vintageTelevision.glb -d -t -v -p 4
 
 import { useValue } from '@legendapp/state/react'
 import { useGLTF } from '@react-three/drei'
-import { useThree } from '@react-three/fiber'
+import { type ThreeElements, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
-import { DoubleSide, type Group, type Mesh, type MeshStandardMaterial, Uniform, Vector2, Vector3 } from 'three'
-import { type GLTF } from 'three-stdlib'
+import { DoubleSide, type Group, type Mesh, type MeshStandardMaterial, ShaderMaterial, Uniform, Vector2, Vector3 } from 'three'
+import { FullScreenQuad, type GLTF } from 'three-stdlib'
 
 import type { GroupProps } from '~/types'
 
@@ -16,7 +16,7 @@ import { useFramerate } from '~/hooks/useFramerate'
 import SpotifyLogo from '~/models/Spotify'
 import { $sceneStore, $sceneStoreActions } from '~/stores/scene'
 
-import PortalMaterial from "../PortalMaterial"
+import PortalMaterial, { type PortalProps } from "../PortalMaterial"
 import frag from "../TransitionMaterial/frag.glsl"
 import vert from "../TransitionMaterial/vert.glsl"
 import transitionFrag from "./frag.glsl"
@@ -37,19 +37,36 @@ type GLTFResult = GLTF & {
 export default function InitialScene(props: GroupProps) {
 	const { materials, nodes } = useGLTF('models/tv.glb') as unknown as GLTFResult
 	const { camera } = useThree()
-	const sceneStoreActions = useValue($sceneStoreActions)
 	const cameraPos = useRef(new Vector3())
 	const initialGroupPosition = useRef(new Vector3())
 	const savedInitialGroupPos = useRef(false)
 	const screenMesh = useRef<Mesh>(null)
+	const screenQuadCopyRef = useRef(new FullScreenQuad(new ShaderMaterial({
+		uniforms: {
+			blend: new Uniform(0)
+		}
+	})))
 	const groupRef = useRef<Group>(null)
+	const portalMaterialRef = useRef<ThreeElements["transitionMaterial"]>(null!)
 
-	const mblend = useValue($sceneStore.playlists.materialBlendValue)
-	const sblend = useValue($sceneStore.playlists.sceneBlendValue)
-	const playlistsSceneStatus = useValue($sceneStore.playlists.sceneStatus)
+	const sceneStoreActions = useValue($sceneStoreActions)
 
 	useFramerate(30, () => {
 		if (!groupRef.current) { return }
+
+		// Update blend uniforms
+		const sceneBlend = sceneStoreActions.getPlaylistsSceneBlendValue()
+		const materialBlend = sceneStoreActions.getPlaylistsMaterialBlendValue()
+
+		if (screenQuadCopyRef.current?.material?.uniforms?.blend) {
+			screenQuadCopyRef.current.material.uniforms.blend.value = sceneBlend
+		}
+		if (portalMaterialRef.current?.uniforms?.blend) {
+			portalMaterialRef.current.uniforms.blend.value = materialBlend
+		}
+
+		// Read status directly without triggering re-renders
+		const playlistsSceneStatus = $sceneStore.playlists.sceneStatus.peek()
 		if (playlistsSceneStatus === "opening") {
 			if (groupRef.current.position.z >= 3.0) {
 				return sceneStoreActions.setPlaylistsSceneStatus("open")
@@ -65,7 +82,6 @@ export default function InitialScene(props: GroupProps) {
 			groupRef.current.position.lerp(initialGroupPosition.current, 0.015)
 			return
 		}
-		//
 	})
 
 	useEffect(() => {
@@ -98,11 +114,12 @@ export default function InitialScene(props: GroupProps) {
 							<color args={["#05f505"]} attach="background" />
 						</group>
 					}
-					blend={sblend}
+					blend={0}
 					blur={0.2}
 					fragmentShader={frag}
-					materialBlend={mblend}
-					resolution={1024}
+					ref={portalMaterialRef}
+					resolution={1024 as PortalProps["resolution"]}
+					screenQuadCopyRef={screenQuadCopyRef}
 					side={DoubleSide}
 					transitionFragmentShader={transitionFrag}
 					transitionVertexShader={transitionVert}

@@ -27,9 +27,7 @@ interface SceneStore {
 	camera?: Camera,
 	playlists: {
 		materialBlend: SpringValue<number>
-		materialBlendValue: number
 		sceneBlend: SpringValue<number>
-		sceneBlendValue: number
 		sceneStatus: SceneStatus;
 	},
 	sceneReady: boolean;
@@ -43,24 +41,14 @@ export const $sceneStore = observable<SceneStore>({
 				friction: 3,
 				mass: 2
 			},
-			// @ts-expect-error react spring mismatched onChange type
-			onChange: (result: number) => {
-				$sceneStore.playlists.materialBlendValue.set(result)
-			}
 		}),
-		materialBlendValue: 0,
 		sceneBlend: new SpringValue(0, {
 			config: {
 				duration: 1500,
 				friction: 3,
 				mass: 5,
 			},
-			// @ts-expect-error react spring mismatched onChange type
-			onChange: (result: number) => {
-				$sceneStore.playlists.sceneBlendValue.set(result)
-			}
 		}),
-		sceneBlendValue: 0,
 		sceneStatus: SCENE_STATUSES.closed,
 	},
 	sceneReady: false,
@@ -69,6 +57,8 @@ export const $sceneStore = observable<SceneStore>({
 interface SceneStoreActions {
 	animatePlaylistsMaterialBlend: (props?: SpringUpdate<number>) => Promise<void>
 	animatePlaylistsSceneBlend: (props?: SpringUpdate<number>) => Promise<void>
+	getPlaylistsMaterialBlendValue: () => number
+	getPlaylistsSceneBlendValue: () => number
 	setCamera: (camera: Camera) => void
 	setPlaylistsSceneStatus: (status: SceneStatus) => void
 	setSceneReady: () => void
@@ -77,6 +67,7 @@ interface SceneStoreActions {
 export const $sceneStoreActions = observable<SceneStoreActions>({
 	animatePlaylistsMaterialBlend: async (props) => {
 		const playlistsMaterialBlend = $sceneStore.playlists.materialBlend.get()
+
 		await playlistsMaterialBlend.start({
 			to: playlistsMaterialBlend.get() === 0 ? 1 : 0,
 			...props
@@ -88,6 +79,12 @@ export const $sceneStoreActions = observable<SceneStoreActions>({
 			to: playlistsSceneBlend.get() === 0 ? 1 : 0,
 			...props
 		})
+	},
+	getPlaylistsMaterialBlendValue: () => {
+		return $sceneStore.playlists.materialBlend.get().get()
+	},
+	getPlaylistsSceneBlendValue: () => {
+		return $sceneStore.playlists.sceneBlend.get().get()
 	},
 	setCamera: (camera: Camera) => {
 		$sceneStore.camera.set(camera)

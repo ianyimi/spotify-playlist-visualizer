@@ -74,15 +74,14 @@ export function usePlaylistsTextureArray(playlists: Playlist[]) {
 						},
 						// @ts-expect-error react spring mismatched onChange type
 						onChange: (result: number) => {
-							$sceneStore.playlists.materialBlendValue.set(result)
 							if (!trigger && result >= 0.75) {
+								trigger = true
 								void sceneStoreActions.animatePlaylistsSceneBlend({
 									config: {
 										duration: 1000
 									},
 									to: 1
 								})
-								trigger = true
 							}
 						},
 						to: 1

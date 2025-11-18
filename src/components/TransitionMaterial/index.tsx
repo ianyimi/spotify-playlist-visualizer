@@ -26,7 +26,7 @@ const TransitionMaterialImpl = shaderMaterial(
 extend({ TransitionMaterial: TransitionMaterialImpl })
 
 export interface TransitionMaterialProps extends ShaderMaterialProps {
-	blend: number
+	blend?: number
 	blur: number
 	children?: ReactNode
 	ref: MutableRefObject<ThreeElements["transitionMaterial"]>
@@ -50,13 +50,14 @@ export default function TransitionMaterial({
 	useFramerate(30, () => {
 		if (!ref.current || !ref.current.uniforms) { return }
 		ref.current.uniforms.uTime!.value += 0.00001;
-		// Don't override blend - it comes from the prop
-		ref.current.uniforms.blend!.value = blend
+		// Only set blend from prop if provided, otherwise let parent update via ref
+		if (blend !== undefined) {
+			ref.current.uniforms.blend!.value = blend
+		}
 	})
 
 	return (
 		<transitionMaterial
-			blend={blend}
 			blur={blur}
 			ref={ref}
 			resolution={resolution}
