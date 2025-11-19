@@ -2,10 +2,10 @@ import { v } from "convex/values";
 
 import { TABLE_SLUG_PLAYLISTS, TABLE_SLUG_USERS } from "~/db/constants";
 
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 
 import { internal } from "./_generated/api";
-import { internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { internalAction, internalMutation, mutation, query } from "./_generated/server";
 import { fetchAllUserPlaylists } from "./model/spotify";
 import { getAccessToken } from "./model/spotify/utils";
 
@@ -37,42 +37,18 @@ export const insertPlaylists = internalMutation({
 		userId: v.id(TABLE_SLUG_USERS)
 	},
 	handler: async (ctx, args) => {
+		const playlistIds: Id<typeof TABLE_SLUG_PLAYLISTS>[] = []
 		for (const playlist of args.playlists) {
-			await ctx.db.insert(TABLE_SLUG_PLAYLISTS, {
+			playlistIds.push(await ctx.db.insert(TABLE_SLUG_PLAYLISTS, {
 				name: playlist.name,
 				type: playlist.collaborative ? "collaborative" : playlist.public ? "public" : "private",
 				images: playlist.images,
 				playlistId: playlist.id,
 				tracksId: [],
 				userId: args.userId
-			})
+			}))
 		}
-	}
-})
-
-export const countPlaylists = internalQuery({
-	args: {
-		userId: v.id(TABLE_SLUG_USERS)
-	},
-	handler: async (ctx, args) => {
-		let userPlaylistCount = 0
-		const playlistsRes = await ctx.db.query(TABLE_SLUG_PLAYLISTS)
-			.withIndex("by_userId", (q) => q.eq("userId", args.userId))
-			.paginate({ cursor: null, numItems: 150 })
-		userPlaylistCount += playlistsRes.page.length
-
-		let cursor = playlistsRes.continueCursor
-		let isDone = playlistsRes.isDone
-		while (!isDone) {
-			const nextPageRes = await ctx.db.query(TABLE_SLUG_PLAYLISTS)
-				.withIndex("by_userId", (q) => q.eq("userId", args.userId))
-				.paginate({ cursor, numItems: 150 })
-			userPlaylistCount += nextPageRes.page.length
-			isDone = nextPageRes.isDone;
-			cursor = nextPageRes.continueCursor;
-		}
-
-		return userPlaylistCount
+		return playlistIds
 	}
 })
 
@@ -105,23 +81,23 @@ export const readPlaylists = query({
 export const getUserPlaylists = internalAction({
 	args: { id: v.id(TABLE_SLUG_USERS) },
 	handler: async (ctx, args) => {
-		const accessToken = await getAccessToken({
+		const { accessToken, account } = await getAccessToken({
 			ctx,
 			userId: args.id,
 		})
-		const playlistsCount = await ctx.runQuery(internal.spotify.countPlaylists, {
+		const { userOwnedPlaylistsTotal, userPlaylistsTotal } = await ctx.runQuery(internal.users.getPlaylistsTotals, {
+			id: args.id
+		})
+		const { userPlaylists, userPlaylistsApiTotal } = await fetchAllUserPlaylists({
+			accessToken,
+			accountId: account.accountId,
+			userOwnedPlaylistsTotal,
+			userPlaylistsTotal
+		})
+		const playlistIds = await ctx.runMutation(internal.spotify.insertPlaylists, {
+			playlists: userPlaylists,
 			userId: args.id
 		})
-		const newPlaylists = await fetchAllUserPlaylists({
-			accessToken,
-			playlistsCount
-		})
-		if (newPlaylists.length > 0) {
-			await ctx.runMutation(internal.spotify.insertPlaylists, {
-				playlists: newPlaylists,
-				userId: args.id
-			})
-		}
+		await ctx.runMutation(internal.users.patchPlaylists, { id: args.id, playlistIds, userOwnedPlaylistsTotal, userPlaylistsTotal: userPlaylistsApiTotal })
 	}
 })
-

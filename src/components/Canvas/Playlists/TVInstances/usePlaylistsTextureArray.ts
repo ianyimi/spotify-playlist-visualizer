@@ -4,7 +4,7 @@ import { DataArrayTexture, LinearFilter, RGBAFormat } from "three"
 
 import type { Playlist } from "~/convex/types"
 
-import { $sceneStore, $sceneStoreActions } from "~/stores/scene"
+import { $sceneStoreActions } from "~/stores/scene"
 
 export function usePlaylistsTextureArray(playlists: Playlist[]) {
 	const [texture, setTexture] = useState<DataArrayTexture | null>(null)
@@ -63,7 +63,6 @@ export function usePlaylistsTextureArray(playlists: Playlist[]) {
 				newTexture.needsUpdate = true
 
 				if (loadedCount === playlists.length - 1) {
-					console.log('loading playlist images complete')
 					setTimeout(() => {
 						sceneStoreActions.setPlaylistsSceneStatus("opening")
 					}, 750)
@@ -74,15 +73,14 @@ export function usePlaylistsTextureArray(playlists: Playlist[]) {
 						},
 						// @ts-expect-error react spring mismatched onChange type
 						onChange: (result: number) => {
-							$sceneStore.playlists.materialBlendValue.set(result)
 							if (!trigger && result >= 0.75) {
+								trigger = true
 								void sceneStoreActions.animatePlaylistsSceneBlend({
 									config: {
 										duration: 1000
 									},
 									to: 1
 								})
-								trigger = true
 							}
 						},
 						to: 1

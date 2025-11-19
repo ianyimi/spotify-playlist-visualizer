@@ -7,14 +7,9 @@ import { RenderTexture, useFBO, useIntersect } from '@react-three/drei'
 import { type ThreeElements, useFrame, useThree } from '@react-three/fiber'
 import dynamic from 'next/dynamic'
 import {
-	forwardRef,
-	type ForwardRefExoticComponent,
-	type PropsWithoutRef,
-	type RefAttributes,
-	type RefObject,
+	type MutableRefObject,
 	useCallback,
 	useEffect,
-	useImperativeHandle,
 	useLayoutEffect,
 	useMemo,
 	useRef,
@@ -48,11 +43,11 @@ const version = parseInt(REVISION.replace(/\D+/g, ''))
 
 const TransitionMaterial = dynamic(() => import("../TransitionMaterial"), { ssr: false })
 
-export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'ref'> & {
-	altScene?: ThreeElements['portalMaterialImpl']["children"];
+export type PortalProps = ThreeElements["transitionMaterial"] & {
+	altScene?: ThreeElements['transitionMaterial']["children"];
 	/** Mix the portals own scene with the world scene, 0 = world scene render,
 	 *  0.5 = both scenes render, 1 = portal scene renders, defaults to 0 */
-	blend?: number
+	blend: number
 	/** Edge fade blur, 0 = no blur (default) */
 	blur?: number
 	/** Optional event priority, defaults to 0 */
@@ -61,14 +56,13 @@ export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'r
 	/** Optionally diable events inside the portal, defaults to false */
 	events?: boolean
 
-	/** Mix the scenes displayed on the portal material,
-	 * 0 = world scene render, 0.5 = both scenes render, 1 = portal scene renders, defaults to 0 */
-	materialBlend?: number
-
 	/** Optional render priority, defaults to 0 */
 	renderPriority?: number
+
 	/** SDF resolution, the smaller the faster is the start-up time (default: 512) */
 	resolution?: number
+	/** Ref for the screenQuad **/
+	screenQuadCopyRef: MutableRefObject<FullScreenQuad<ShaderMaterial>>
 
 	/** Optionally provide a fragment shader for the RenderTexture Material to use */
 	transitionFragmentShader?: string;
@@ -82,177 +76,14 @@ export type PortalProps = Omit<ThreeElements['portalMaterialImpl'], 'blend' | 'r
 	worldUnits?: boolean
 }
 
-type ForwardRefComponent<P, T> = ForwardRefExoticComponent<PropsWithoutRef<P> & RefAttributes<T>>
-
-const PortalMaterial: ForwardRefComponent<PortalProps, ThreeElements['transitionMaterial']> =
-  // eslint-disable-next-line react/display-name
-  /* @__PURE__ */ forwardRef(
-	(
-		{
-			altScene,
-			blend = 0,
-			blur = 0,
-			children,
-			eventPriority = 0,
-			events = undefined,
-			glslVersion,
-			materialBlend = 0,
-			renderPriority = 0,
-			resolution = 512,
-			transitionFragmentShader,
-			transitionVertexShader,
-			uniforms,
-			uTextureA,
-			worldUnits = false,
-			...shaderProps
-		},
-		fref
-	) => {
-
-		const ref = useRef<ThreeElements['transitionMaterial']>(null!)
-		const { camera, gl, scene, setEvents, size, viewport } = useThree()
-		const maskRenderTarget = useFBO(resolution, resolution)
-		const mainCameraRef = useRef<PerspectiveCamera>(camera as PerspectiveCamera)
-
-		const [priority, setPriority] = useState(0)
-		useFrame(() => {
-			mainCameraRef.current = camera as PerspectiveCamera
-			// If blend (sceneBlend) is > 0 then the portal is being entered, the render-priority must change
-			const p = blend > 0 ? Math.max(1, renderPriority) : 0
-			if (priority !== p) { setPriority(p) }
-		})
-
-		useEffect(() => {
-			if (events !== undefined) { setEvents({ enabled: !events }) }
-			// eslint-disable-next-line react-hooks/exhaustive-deps
-		}, [events])
-
-		const [visible, setVisible] = useState(true)
-		// See if the parent mesh is in the camera frustum
-		const parent = useIntersect(setVisible)
-		useLayoutEffect(() => {
-			// Since the ref above is not tied to a mesh directly (we're inside a material),
-			// it has to be tied to the parent mesh here
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-			parent.current = (ref.current as any)?.__r3f.parent?.object
-			// eslint-disable-next-line react-hooks/exhaustive-deps
-		}, [])
-
-		useLayoutEffect(() => {
-			if (!parent.current) { return }
-
-			// Apply the SDF mask only once
-			if (blur && ref.current.sdf === null) {
-				// @ts-expect-error copied src from drei repo
-				const tempMesh = new Mesh(parent.current.geometry, new MeshBasicMaterial())
-				const boundingBox = new Box3().setFromBufferAttribute(
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-					tempMesh.geometry.attributes.position as BufferAttribute
-				)
-				const orthoCam = new OrthographicCamera(
-					boundingBox.min.x * (1 + 2 / resolution),
-					boundingBox.max.x * (1 + 2 / resolution),
-					boundingBox.max.y * (1 + 2 / resolution),
-					boundingBox.min.y * (1 + 2 / resolution),
-					0.1,
-					1000
-				)
-				orthoCam.position.set(0, 0, 1)
-				orthoCam.lookAt(0, 0, 0)
-
-				gl.setRenderTarget(maskRenderTarget)
-				gl.render(tempMesh, orthoCam)
-				const sg = makeSDFGenerator(resolution, resolution, gl)
-				const sdf = sg(maskRenderTarget.texture)
-				const readSdf = new Float32Array(resolution * resolution)
-				gl.readRenderTargetPixels(sdf, 0, 0, resolution, resolution, readSdf)
-				// Get smallest value in sdf
-				let min = Infinity
-				// eslint-disable-next-line @typescript-eslint/prefer-for-of
-				for (let i = 0; i < readSdf.length; i++) {
-					// @ts-expect-error copied from drei src code
-					if (readSdf[i] < min) { min = readSdf[i] }
-				}
-				min = -min
-				ref.current.size = min
-				ref.current.sdf = sdf.texture
-
-				gl.setRenderTarget(null)
-			}
-			// eslint-disable-next-line react-hooks/exhaustive-deps
-		}, [resolution, blur])
-
-		useImperativeHandle(fref, () => ref.current)
-
-		// @ts-expect-error copied from drei src
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars 
-		const compute = useCallback((event, state, previous) => {
-			if (!parent.current) { return false }
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-			state.pointer.set((event.offsetX / state.size.width) * 2 - 1, -(event.offsetY / state.size.height) * 2 + 1)
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-			state.raycaster.setFromCamera(state.pointer, state.camera)
-
-			if (ref.current?.blend === 0) {
-				// We run a quick check against the parent, if it isn't hit there's no need to raycast at all
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-				const [intersection] = state.raycaster.intersectObject(parent.current)
-				if (!intersection) {
-					// Cancel out the raycast camera if the parent mesh isn't hit
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-					state.raycaster.camera = undefined
-					return false
-				}
-			}
-			// eslint-disable-next-line react-hooks/exhaustive-deps
-		}, [])
-
-		return (
-			<TransitionMaterial
-				attach="material"
-				blend={materialBlend}
-				blur={blur}
-				ref={ref}
-				resolution={new Vector2(size.width * viewport.dpr, size.height * viewport.dpr)}
-				{...shaderProps}
-			>
-				{!uTextureA && altScene && <RenderTexture attach="uTextureA" frames={Infinity}>
-					{altScene}
-				</RenderTexture>}
-				<RenderTexture
-					attach="uTextureB"
-					compute={compute}
-					eventPriority={eventPriority}
-					frames={visible ? Infinity : 0}
-					renderPriority={renderPriority}
-				>
-					{children}
-					<ManagePortalScene
-						events={events}
-						fragmentShader={transitionFragmentShader}
-						glslVersion={glslVersion ?? "100"}
-						material={ref}
-						priority={priority}
-						rootScene={scene}
-						sceneBlend={blend}
-						uniforms={uniforms}
-						vertexShader={transitionVertexShader}
-						worldUnits={worldUnits}
-					/>
-				</RenderTexture>
-			</TransitionMaterial>
-		)
-	}
-)
-
 function ManagePortalScene({
 	events = undefined,
 	fragmentShader,
 	glslVersion,
 	material,
-	priority,
 	rootScene,
-	sceneBlend,
+	screenQuadCopyRef,
+	shouldRenderRef,
 	uniforms = {},
 	vertexShader,
 	worldUnits,
@@ -260,10 +91,10 @@ function ManagePortalScene({
 	events?: boolean;
 	fragmentShader?: string;
 	glslVersion?: GLSLVersion;
-	material: RefObject<ThreeElements['transitionMaterial']>
-	priority: number;
+	material: MutableRefObject<ThreeElements['transitionMaterial']>
 	rootScene: Scene;
-	sceneBlend: number;
+	screenQuadCopyRef: PortalProps["screenQuadCopyRef"],
+	shouldRenderRef: MutableRefObject<boolean>;
 	uniforms?: Record<string, IUniform<unknown>>;
 	vertexShader?: string;
 	worldUnits: boolean;
@@ -324,23 +155,31 @@ function ManagePortalScene({
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
 		const parent = (material?.current as any)?.__r3f.parent?.object
 		quad.material.uniforms.uTime!.value += 0.01
+
+		const screenQuadBlend = screenQuadCopyRef.current.material.uniforms.blend!.value as number
+
+		// Always update quad blend to keep in sync
+		blend.value = screenQuadBlend
+
+		const sceneBlend = quad.material.uniforms.blend!.value as number
+		const shouldRender = shouldRenderRef.current
+
 		if (parent) {
 			// Move portal contents along with the parent if worldUnits is true
 			if (!worldUnits) {
 				// If the portal renders exclusively the original scene needs to be updated
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-				if (priority && sceneBlend === 1) { parent.updateWorldMatrix(true, false) }
+				if (shouldRender && sceneBlend === 1) { parent.updateWorldMatrix(true, false) }
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
 				scene.matrixWorld.copy(parent.matrixWorld)
 			} else { scene.matrixWorld.identity() }
 
 			// This bit is only necessary if the portal is blended, now it has a render-priority
 			// and will take over the render loop
-			if (priority) {
-				if (sceneBlend > 0 && sceneBlend < 1) {
+			if (shouldRender) {
+				if (sceneBlend >= 0 && sceneBlend < 1) {
 					// If blend is ongoing (> 0 and < 1) then we need to render both the root scene
 					// and the portal scene, both will then be mixed in the quad from above
-					blend.value = sceneBlend
 					state.gl.setRenderTarget(buffer1)
 					state.gl.render(scene, state.camera)
 					state.gl.setRenderTarget(buffer2)
@@ -351,10 +190,167 @@ function ManagePortalScene({
 					// However if blend is 1 we only need to render the portal scene
 					state.gl.render(scene, state.camera)
 				}
+			} else {
+				// When materialBlend is 0, render the default scene to avoid white screen
+				state.gl.render(rootScene, state.camera)
 			}
 		}
-	}, priority)
+	}, 1)
 	return <></>
+}
+
+function PortalMaterial({
+	altScene,
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	blend,
+	blur = 0,
+	children,
+	eventPriority = 0,
+	events = undefined,
+	glslVersion,
+	ref,
+	renderPriority = 0,
+	resolution = 512 as PortalProps["resolution"],
+	screenQuadCopyRef,
+	transitionFragmentShader,
+	transitionVertexShader,
+	uniforms,
+	uTextureA,
+	worldUnits = false,
+	...shaderProps
+}: PortalProps) {
+
+	const { camera, gl, scene, setEvents, size, viewport } = useThree()
+	const maskRenderTarget = useFBO(resolution, resolution)
+	const mainCameraRef = useRef<PerspectiveCamera>(camera as PerspectiveCamera)
+
+	const shouldRenderRef = useRef(false)
+
+	useFrame(() => {
+		if (!ref.current?.uniforms?.blend) { return }
+		mainCameraRef.current = camera as PerspectiveCamera
+		// Update ref to control rendering without triggering re-renders
+		const materialBlend = ref.current.uniforms.blend.value as number
+		shouldRenderRef.current = materialBlend > 0
+	})
+
+	useEffect(() => {
+		if (events !== undefined) { setEvents({ enabled: !events }) }
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [events])
+
+	const [visible, setVisible] = useState(true)
+	// See if the parent mesh is in the camera frustum
+	const parent = useIntersect(setVisible)
+	useLayoutEffect(() => {
+		// Since the ref above is not tied to a mesh directly (we're inside a material),
+		// it has to be tied to the parent mesh here
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+		parent.current = (ref.current as any)?.__r3f.parent?.object
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
+
+	useLayoutEffect(() => {
+		if (!parent.current) { return }
+
+		// Apply the SDF mask only once
+		if (blur && ref.current.sdf === null) {
+			// @ts-expect-error copied src from drei repo
+			const tempMesh = new Mesh(parent.current.geometry, new MeshBasicMaterial())
+			const boundingBox = new Box3().setFromBufferAttribute(
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+				tempMesh.geometry.attributes.position as BufferAttribute
+			)
+			const orthoCam = new OrthographicCamera(
+				boundingBox.min.x * (1 + 2 / resolution),
+				boundingBox.max.x * (1 + 2 / resolution),
+				boundingBox.max.y * (1 + 2 / resolution),
+				boundingBox.min.y * (1 + 2 / resolution),
+				0.1,
+				1000
+			)
+			orthoCam.position.set(0, 0, 1)
+			orthoCam.lookAt(0, 0, 0)
+
+			gl.setRenderTarget(maskRenderTarget)
+			gl.render(tempMesh, orthoCam)
+			const sg = makeSDFGenerator(resolution, resolution, gl)
+			const sdf = sg(maskRenderTarget.texture)
+			const readSdf = new Float32Array(resolution * resolution)
+			gl.readRenderTargetPixels(sdf, 0, 0, resolution, resolution, readSdf)
+			// Get smallest value in sdf
+			let min = Infinity
+			// eslint-disable-next-line @typescript-eslint/prefer-for-of
+			for (let i = 0; i < readSdf.length; i++) {
+				// @ts-expect-error copied from drei src code
+				if (readSdf[i] < min) { min = readSdf[i] }
+			}
+			min = -min
+			ref.current.size = min
+			ref.current.sdf = sdf.texture
+
+			gl.setRenderTarget(null)
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [resolution, blur])
+
+	// @ts-expect-error copied from drei src
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars 
+	const compute = useCallback((event, state, previous) => {
+		if (!parent.current || !ref.current?.uniforms) { return false }
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+		state.pointer.set((event.offsetX / state.size.width) * 2 - 1, -(event.offsetY / state.size.height) * 2 + 1)
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+		state.raycaster.setFromCamera(state.pointer, state.camera)
+
+		if (ref.current.uniforms.blend!.value === 0) {
+			// We run a quick check against the parent, if it isn't hit there's no need to raycast at all
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+			const [intersection] = state.raycaster.intersectObject(parent.current)
+			if (!intersection) {
+				// Cancel out the raycast camera if the parent mesh isn't hit
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+				state.raycaster.camera = undefined
+				return false
+			}
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
+
+	return (
+		<TransitionMaterial
+			attach="material"
+			blur={blur}
+			ref={ref}
+			resolution={new Vector2(size.width * viewport.dpr, size.height * viewport.dpr)}
+			{...shaderProps}
+		>
+			{!uTextureA && altScene && <RenderTexture attach="uTextureA" frames={Infinity}>
+				{altScene}
+			</RenderTexture>}
+			<RenderTexture
+				attach="uTextureB"
+				compute={compute}
+				eventPriority={eventPriority}
+				frames={visible ? Infinity : 0}
+				renderPriority={renderPriority}
+			>
+				{children}
+				<ManagePortalScene
+					events={events}
+					fragmentShader={transitionFragmentShader}
+					glslVersion={glslVersion ?? "100"}
+					material={ref}
+					rootScene={scene}
+					screenQuadCopyRef={screenQuadCopyRef}
+					shouldRenderRef={shouldRenderRef}
+					uniforms={uniforms}
+					vertexShader={transitionVertexShader}
+					worldUnits={worldUnits}
+				/>
+			</RenderTexture>
+		</TransitionMaterial>
+	)
 }
 
 export default PortalMaterial;

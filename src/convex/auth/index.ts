@@ -60,6 +60,11 @@ export const createAuth = (
 					defaultValue: [],
 					required: true
 				},
+				playlistsApiTotal: {
+					type: "number",
+					defaultValue: 0,
+					required: true
+				},
 				role: {
 					type: "string[]",
 					defaultValue: [USER_ROLES.user],
