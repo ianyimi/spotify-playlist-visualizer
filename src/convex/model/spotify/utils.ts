@@ -25,7 +25,7 @@ export async function getAccessToken({
 		throw new Error("user account missing access or refresh token")
 	}
 	if (account.accessTokenExpiresAt > Date.now()) {
-		return account.accessToken
+		return { accessToken: account.accessToken, account }
 	}
 
 	const clientId = process.env.SPOTIFY_CLIENT_ID;
@@ -54,7 +54,7 @@ export async function getAccessToken({
 		refreshToken: data.refresh_token
 	})
 
-	return data.access_token
+	return { accessToken: data.access_token, account }
 }
 
 export async function spotifyFetch<T>({

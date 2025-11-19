@@ -3,37 +3,22 @@ import type { SpotifyPlaylistsResponse } from "~/lib/types";
 
 import { spotifyFetch } from "./utils";
 
-export async function fetchAllUserPlaylists({ accessToken, playlistsCount }: { accessToken: string, playlistsCount: number }) {
+export async function fetchAllUserPlaylists({ accessToken, accountId, userOwnedPlaylistsTotal, userPlaylistsTotal }: { accessToken: string, accountId: string; userOwnedPlaylistsTotal: number; userPlaylistsTotal: number, }) {
 	const userPlaylists: typeof internal.spotify.insertPlaylists["_args"]["playlists"] = []
 	const playlistsRes = await spotifyFetch<SpotifyPlaylistsResponse>({
 		accessToken,
 		endpoint: "me/playlists"
 	})
-	const total = playlistsRes.total
-	if (total <= playlistsCount) {
-		console.warn("Playlist info up to date")
-		return []
+	const userPlaylistsApiTotal = playlistsRes.total
+	if (userOwnedPlaylistsTotal !== 0 && userPlaylistsApiTotal <= userPlaylistsTotal) {
+		console.warn("Playlist info up to date", userPlaylistsTotal, userOwnedPlaylistsTotal)
+		return { userPlaylists: [], userPlaylistsApiTotal }
+	} else {
+		console.warn("Playlist info not up to date", userPlaylistsTotal, userOwnedPlaylistsTotal)
 	}
 	const limit = playlistsRes.limit
 	for (const playlist of playlistsRes.items) {
-		userPlaylists.push({
-			id: playlist.id,
-			name: playlist.name,
-			collaborative: playlist.collaborative,
-			images: playlist.images,
-			public: playlist.public,
-		})
-	}
-	if (total < limit) {
-		return userPlaylists
-	}
-	let next = playlistsRes.next
-	while (next !== null) {
-		const nextPageRes = await spotifyFetch<SpotifyPlaylistsResponse>({
-			accessToken,
-			url: next
-		})
-		for (const playlist of nextPageRes.items) {
+		if (playlist.owner.id === accountId) {
 			userPlaylists.push({
 				id: playlist.id,
 				name: playlist.name,
@@ -42,7 +27,28 @@ export async function fetchAllUserPlaylists({ accessToken, playlistsCount }: { a
 				public: playlist.public,
 			})
 		}
+	}
+	if (userPlaylistsApiTotal < limit) {
+		return { userPlaylists, userPlaylistsApiTotal }
+	}
+	let next = playlistsRes.next
+	while (next !== null) {
+		const nextPageRes = await spotifyFetch<SpotifyPlaylistsResponse>({
+			accessToken,
+			url: next
+		})
+		for (const playlist of nextPageRes.items) {
+			if (playlist.owner.id === accountId) {
+				userPlaylists.push({
+					id: playlist.id,
+					name: playlist.name,
+					collaborative: playlist.collaborative,
+					images: playlist.images,
+					public: playlist.public,
+				})
+			}
+		}
 		next = nextPageRes.next
 	}
-	return userPlaylists
+	return { userPlaylists, userPlaylistsApiTotal }
 }

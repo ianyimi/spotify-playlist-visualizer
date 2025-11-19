@@ -17,6 +17,7 @@ export default defineSchema({
 		phoneNumber: v.optional(v.union(v.null(), v.string())),
 		phoneNumberVerified: v.optional(v.union(v.null(), v.boolean())),
 		playlistIds: v.array(v.id(TABLE_SLUG_PLAYLISTS)),
+		playlistsApiTotal: v.number(),
 		role: v.array(v.string()),
 		twoFactorEnabled: v.optional(v.union(v.null(), v.boolean())),
 		updatedAt: v.number(),
