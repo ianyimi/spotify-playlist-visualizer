@@ -11,10 +11,8 @@ export async function fetchAllUserPlaylists({ accessToken, accountId, userOwnedP
 	})
 	const userPlaylistsApiTotal = playlistsRes.total
 	if (userOwnedPlaylistsTotal !== 0 && userPlaylistsApiTotal <= userPlaylistsTotal) {
-		console.warn("Playlist info up to date", userPlaylistsTotal, userOwnedPlaylistsTotal)
+		// console.warn("Playlist info up to date. [upt, uopt]: ", userPlaylistsTotal, userOwnedPlaylistsTotal)
 		return { userPlaylists: [], userPlaylistsApiTotal }
-	} else {
-		console.warn("Playlist info not up to date", userPlaylistsTotal, userOwnedPlaylistsTotal)
 	}
 	const limit = playlistsRes.limit
 	for (const playlist of playlistsRes.items) {
