@@ -1,7 +1,9 @@
 #define PI 3.14
 
+uniform float[500] uHoveredParticleArray;
 uniform sampler2DArray uTextureArray;
 uniform float uTime;
+uniform vec3 uHoverColor;
 uniform vec2 uResolution;
 
 in vec2 vUv;
@@ -69,5 +71,7 @@ void main() {
     float strength = (0.3 + 0.7 * noise1d(0.3 * uTime)) * 200. / uResolution.x;
     imageTexture.rgb += vec3(5.0 * strength * (random2d(uv + 1.133001 * vec2(uTime, 1.13)) - 0.5));
 
-    fragColor = imageTexture;
+    vec3 hoverColor = mix(imageTexture.rgb, uHoverColor, uHoveredParticleArray[vInstanceIndex] * 0.25);
+
+    fragColor = vec4(hoverColor, 1.);
 }
