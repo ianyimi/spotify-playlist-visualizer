@@ -21,11 +21,20 @@ export const SCENE_STATUSES = {
 	open: "open",
 	opening: "opening"
 } as const
+export type PlaylistsCameraDirection = SceneStore["playlists"]["camera"]["direction"]
+
 export type SceneStatus = typeof SCENE_STATUSES[keyof typeof SCENE_STATUSES]
 
 interface SceneStore {
 	camera?: Camera,
 	playlists: {
+		camera: {
+			direction: "down" | "idle" | "left" | "right" | "up"
+			maxX: number,
+			maxY: number
+			minX: number,
+			minY: number,
+		}
 		materialBlend: SpringValue<number>
 		sceneBlend: SpringValue<number>
 		sceneStatus: SceneStatus;
@@ -35,6 +44,13 @@ interface SceneStore {
 
 export const $sceneStore = observable<SceneStore>({
 	playlists: {
+		camera: {
+			direction: "idle",
+			maxX: 0,
+			maxY: 0,
+			minX: 0,
+			minY: 0
+		},
 		materialBlend: new SpringValue(0, {
 			config: {
 				duration: 1500,
@@ -60,6 +76,8 @@ interface SceneStoreActions {
 	getPlaylistsMaterialBlendValue: () => number
 	getPlaylistsSceneBlendValue: () => number
 	setCamera: (camera: Camera) => void
+	setPlaylistsCameraBounds: ({ maxX, maxY, minX, minY }: { maxX: number, maxY: number; minX: number, minY: number, }) => void
+	setPlaylistsCameraDirection: (direction: PlaylistsCameraDirection) => void
 	setPlaylistsSceneStatus: (status: SceneStatus) => void
 	setSceneReady: () => void
 }
@@ -88,6 +106,18 @@ export const $sceneStoreActions = observable<SceneStoreActions>({
 	},
 	setCamera: (camera: Camera) => {
 		$sceneStore.camera.set(camera)
+	},
+	setPlaylistsCameraBounds: ({ maxX, maxY, minX, minY }) => {
+		$sceneStore.playlists.camera.set({
+			direction: $sceneStore.playlists.camera.direction.get(),
+			maxX,
+			maxY,
+			minX,
+			minY
+		})
+	},
+	setPlaylistsCameraDirection: (direction) => {
+		$sceneStore.playlists.camera.direction.set(direction)
 	},
 	setPlaylistsSceneStatus: (status) => {
 		$sceneStore.playlists.sceneStatus.set(status)

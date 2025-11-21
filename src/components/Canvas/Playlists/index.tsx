@@ -5,6 +5,7 @@ import type { GroupProps } from "~/types"
 
 import { $spotifyStore } from "~/stores/spotify"
 
+import CameraControls from "./CameraControls"
 import TVInstances from "./TVInstances"
 
 export default function Playlists(props: GroupProps) {
@@ -14,6 +15,7 @@ export default function Playlists(props: GroupProps) {
 	}, [playlists])
 	return (
 		<group {...props}>
+			<CameraControls />
 			<TVInstances />
 		</group>
 	)
