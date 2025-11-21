@@ -94,12 +94,6 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 				}
 			}
 		)
-
-		// return () => {
-		// 	$spotifyStore.hoveredPlaylistsUniform.get().stop()
-		// 	$spotifyStore.prevHoveredPlaylistsUniform.get().stop()
-		// }
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [hoveredParticle])
 
 	useFramerate(30, () => {
