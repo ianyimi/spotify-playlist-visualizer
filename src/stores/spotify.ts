@@ -84,22 +84,6 @@ export const $spotifyStoreActions = observable<SpotifyStoreActions>({
 				})
 				: Promise.resolve(),
 		])
-		// if (hoveredPlaylist) {
-		// 	console.log(`animating hovered playlists uniform at index ${hoveredPlaylist}...`)
-		// 	await $spotifyStore.hoveredPlaylistsUniform.get().start({
-		// 		from: 0,
-		// 		to: 1,
-		// 		...props
-		// 	})
-		// }
-		// if (prevHoveredPlaylist) {
-		// 	console.log(`animating prev hovered playlists uniform at index ${prevHoveredPlaylist}...`)
-		// 	await $spotifyStore.prevHoveredPlaylistsUniform.get().start({
-		// 		from: 1,
-		// 		to: 0,
-		// 		...prevProps
-		// 	})
-		// }
 	},
 
 	getHoveredPlaylistsUniformValue: () => {

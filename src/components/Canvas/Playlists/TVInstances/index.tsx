@@ -71,8 +71,6 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 	}, [sceneStoreActions])
 
 	useEffect(() => {
-		console.log('animate both values here', prevHoveredParticle, hoveredParticle)
-
 		void spotifyStoreActions.animateHoveredPlaylistsUniform(
 			{
 				// @ts-expect-error react spring type mismatch, no problem here
