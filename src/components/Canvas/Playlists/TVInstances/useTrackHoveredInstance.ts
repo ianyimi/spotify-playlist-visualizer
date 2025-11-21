@@ -18,7 +18,6 @@ export function useTrackHoveredInstance({ count, groupRef }: { count: number, gr
 	const mouseRef = useRef(new Vector2(999, 999));
 	const lastMousePositionRef = useRef(new Vector2(999, 999));
 	const lastHoverCheckRef = useRef<number>(0);
-	const previousHoveredParticleRef = useRef<null | number>(null);
 
 	const positions = useMemo(() => {
 		const result = []
