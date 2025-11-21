@@ -5,7 +5,7 @@ Command: npx gltfjsx@6.5.3 ./public/staging/vintageTelevision.glb -d -t -v -p 4
 
 import { useValue } from '@legendapp/state/react'
 import { Instance, Instances, type InstancesProps, useGLTF } from '@react-three/drei'
-import { useEffect, useRef } from 'react'
+import { useCallback, useRef } from 'react'
 import { type AnimationClip, Box3, type Group, type Mesh, type MeshStandardMaterial, type ShaderMaterial, Uniform, Vector2, Vector3 } from 'three'
 import { type GLTF } from 'three-stdlib'
 
@@ -38,7 +38,6 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 	const playlists = useValue($spotifyStore.userPlaylists)
 	const sceneStoreActions = useValue($sceneStoreActions)
 	const { materials, nodes } = useGLTF(`models/tv.glb`) as unknown as GLTFResult
-	const groupRef = useRef<Group>(null)
 	const shaderMaterial = useRef<ShaderMaterial>(null)
 
 	const centerX = ROW_LENGTH * GAPX / 2
@@ -48,21 +47,17 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 
 	const textureArray = usePlaylistsTextureArray(playlists)
 
-	useEffect(() => {
-		if (!groupRef.current) { return }
-		const groupBoundingBox = new Box3().setFromObject(groupRef.current)
-		const gbbs = groupBoundingBox.getSize(new Vector3())
-		console.log('group bounding box: ', groupBoundingBox.min, groupBoundingBox.max)
-		console.log('gbbs: ', gbbs)
-		const offset = 5
+	const groupRef = useCallback((node: Group | null) => {
+		if (!node) { return }
+		const groupBoundingBox = new Box3().setFromObject(node)
+		const offset = 25
 		sceneStoreActions.setPlaylistsCameraBounds({
 			maxX: groupBoundingBox.max.x - offset,
 			maxY: groupBoundingBox.max.y - offset,
 			minX: groupBoundingBox.min.x + offset,
 			minY: groupBoundingBox.min.y + offset
 		})
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [groupRef?.current])
+	}, [sceneStoreActions])
 
 	useFramerate(30, () => {
 		if (!shaderMaterial.current) { return };

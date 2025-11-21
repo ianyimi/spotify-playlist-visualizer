@@ -13,26 +13,40 @@ export function useKeyboardControls() {
 			switch (ev.key) {
 				case "a":
 				case "ArrowLeft":
-					sceneStoreActions.setPlaylistsCameraDirection("left")
+					sceneStoreActions.pushPlaylistsCameraDirection("left")
 					break;
 				case "w":
 				case "ArrowUp":
-					sceneStoreActions.setPlaylistsCameraDirection("up")
+					sceneStoreActions.pushPlaylistsCameraDirection("up")
 					break;
 				case "s":
 				case "ArrowDown":
-					sceneStoreActions.setPlaylistsCameraDirection("down")
+					sceneStoreActions.pushPlaylistsCameraDirection("down")
 					break;
 				case "d":
 				case "ArrowRight":
-					sceneStoreActions.setPlaylistsCameraDirection("right")
+					sceneStoreActions.pushPlaylistsCameraDirection("right")
 					break;
 			}
 		}
 		function handleKeyUp(this: Document, ev: KeyboardEvent) {
-			const validKeys = ["a", "w", "s", "d", "ArrowLeft", "ArrowUp", "ArrowDown", "ArrowRight"]
-			if (validKeys.includes(ev.key)) {
-				sceneStoreActions.setPlaylistsCameraDirection("idle")
+			switch (ev.key) {
+				case "a":
+				case "ArrowLeft":
+					sceneStoreActions.removePlaylistsCameraDirection("left")
+					break;
+				case "w":
+				case "ArrowUp":
+					sceneStoreActions.removePlaylistsCameraDirection("up")
+					break;
+				case "s":
+				case "ArrowDown":
+					sceneStoreActions.removePlaylistsCameraDirection("down")
+					break;
+				case "d":
+				case "ArrowRight":
+					sceneStoreActions.removePlaylistsCameraDirection("right")
+					break;
 			}
 		}
 		document.addEventListener("keydown", handleKeyDown)
