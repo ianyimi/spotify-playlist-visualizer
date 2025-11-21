@@ -5,17 +5,18 @@ Command: npx gltfjsx@6.5.3 ./public/staging/vintageTelevision.glb -d -t -v -p 4
 
 import { useValue } from '@legendapp/state/react'
 import { Instance, Instances, type InstancesProps, useGLTF } from '@react-three/drei'
-import { useCallback, useRef } from 'react'
-import { type AnimationClip, Box3, type Group, type Mesh, type MeshStandardMaterial, type ShaderMaterial, Uniform, Vector2, Vector3 } from 'three'
+import { useCallback, useEffect, useRef } from 'react'
+import { type AnimationClip, Box3, Color, type Group, type Mesh, type MeshStandardMaterial, type ShaderMaterial, Uniform, Vector2, Vector3 } from 'three'
 import { type GLTF } from 'three-stdlib'
 
 import { useFramerate } from '~/hooks/useFramerate'
 import { $sceneStoreActions } from '~/stores/scene'
-import { $spotifyStore } from '~/stores/spotify'
+import { $spotifyStore, $spotifyStoreActions } from '~/stores/spotify'
 
 import frag from "./frag.glsl"
 import InstancedScreenMaterial from './InstancedShaderMaterial'
 import { usePlaylistsTextureArray } from './usePlaylistsTextureArray'
+import { useTrackHoveredInstance } from './useTrackHoveredInstance'
 import vert from "./vert.glsl"
 
 type GLTFResult = GLTF & {
@@ -34,15 +35,25 @@ export const GAPX = 4;
 export const GAPY = 3;
 export const ROW_LENGTH = 10;
 
+export function getInstancePosition({ index, offsets, total }: { index: number, offsets: [number, number, number], total: number }) {
+	const centerX = ROW_LENGTH * GAPX / 2
+	const maxRows = Math.floor(total / ROW_LENGTH)
+	const centerY = maxRows * GAPY / 2
+	return new Vector3(index % ROW_LENGTH * GAPX + offsets[0] - centerX, Math.floor(index / ROW_LENGTH) * -GAPY + offsets[1] + centerY, offsets[2])
+}
+
 export default function InstancedVintageTelevision({ ...groupProps }: Partial<InstancesProps>) {
 	const playlists = useValue($spotifyStore.userPlaylists)
 	const sceneStoreActions = useValue($sceneStoreActions)
+	const hoveredParticle = useValue($spotifyStore.hoveredPlaylist);
+	const prevHoveredParticle = useValue($spotifyStore.prevHoveredPlaylist);
+	const spotifyStoreActions = useValue($spotifyStoreActions)
 	const { materials, nodes } = useGLTF(`models/tv.glb`) as unknown as GLTFResult
 	const shaderMaterial = useRef<ShaderMaterial>(null)
+	const innerGroupRef = useRef<Group>(null)
 
-	const centerX = ROW_LENGTH * GAPX / 2
-	const maxRows = Math.floor(playlists.length / ROW_LENGTH)
-	const centerY = maxRows * GAPY / 2
+	useTrackHoveredInstance({ count: playlists.length, groupRef: innerGroupRef })
+
 	const playlistsWithImages = playlists.filter((p) => p.images !== null && p.images.length > 0)
 
 	const textureArray = usePlaylistsTextureArray(playlists)
@@ -59,6 +70,40 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 		})
 	}, [sceneStoreActions])
 
+	useEffect(() => {
+		console.log('animate both values here', prevHoveredParticle, hoveredParticle)
+
+		void spotifyStoreActions.animateHoveredPlaylistsUniform(
+			{
+				// @ts-expect-error react spring type mismatch, no problem here
+				onChange: (value: number) => {
+					// console.log('hovered value: ', value)
+					if (hoveredParticle === null || !shaderMaterial.current) { return }
+					const uHoveredParticleValue = (shaderMaterial.current.uniforms.uHoveredParticleArray?.value as number[])
+					if (!uHoveredParticleValue) { return }
+					uHoveredParticleValue[hoveredParticle] = value
+					// shaderMaterial.current.uniformsNeedUpdate = true
+				}
+			},
+			{
+				onChange: (value: number) => {
+					// console.log('prevHovered value: ', value)
+					if (prevHoveredParticle === null || !shaderMaterial.current) { return }
+					const uHoveredParticleValue = (shaderMaterial.current.uniforms.uHoveredParticleArray?.value as number[])
+					if (!uHoveredParticleValue) { return }
+					uHoveredParticleValue[prevHoveredParticle] = value
+					// shaderMaterial.current.uniformsNeedUpdate = true
+				}
+			}
+		)
+
+		// return () => {
+		// 	$spotifyStore.hoveredPlaylistsUniform.get().stop()
+		// 	$spotifyStore.prevHoveredPlaylistsUniform.get().stop()
+		// }
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [hoveredParticle])
+
 	useFramerate(30, () => {
 		if (!shaderMaterial.current) { return };
 		shaderMaterial.current.uniforms.uTime!.value += 0.01
@@ -70,44 +115,49 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 
 	return (
 		<group ref={groupRef} {...groupProps}>
-			<Instances dispose={null} frustumCulled={false} geometry={nodes.TV.geometry} material={materials["TV_Chayka-206"]}>
-				{playlistsWithImages.map((p, i) => {
-					return (
-						<Instance
-							key={`tv-body-instance-${i}`}
-							position={[i % ROW_LENGTH * GAPX - 0.0011 - centerX, Math.floor(i / ROW_LENGTH) * -GAPY + 0.0054 + centerY, -0.0071]}
-							scale={5.0041}
-						/>
-					)
-				})}
-			</Instances>
-			<Instances frustumCulled={false} geometry={nodes.TVSCREEN.geometry}>
-				<shaderMaterial
-					fragmentShader={frag}
-					glslVersion="300 es"
-					ref={shaderMaterial}
-					uniforms={{
-						uResolution: new Uniform(new Vector2(window.innerWidth, window.innerHeight)),
-						uTextureArray: new Uniform(textureArray),
-						uTime: new Uniform(0)
-					}}
-					vertexShader={vert}
-				/>
-				{playlistsWithImages.map((p, i) => {
-					return <InstancedScreenMaterial index={i} key={`tv-screen-instance-${i}`} playlist={p} playlistCount={playlists.length} />
-				})}
-			</Instances>
-			<Instances frustumCulled={false} geometry={nodes.TVSCREENBEZEL.geometry} material={materials["TV_Chayka-206"]}>
-				{playlistsWithImages.map((p, i) => {
-					return (
-						<Instance
-							key={`tv-bezel-instance-${i}`}
-							position={[i % ROW_LENGTH * GAPX - 0.4388 - centerX, Math.floor(i / ROW_LENGTH) * -GAPY + 1.2966 + centerY, 0.8396]}
-							scale={[5.1008, 5.1032, 4.9647]}
-						/>
-					)
-				})}
-			</Instances>
+			<group ref={innerGroupRef}>
+				<Instances dispose={null} frustumCulled={false} geometry={nodes.TV.geometry} material={materials["TV_Chayka-206"]}>
+					{playlistsWithImages.map((p, i) => {
+						return (
+							<Instance
+								key={`tv-body-instance-${i}`}
+								position={getInstancePosition({ index: i, offsets: [-0.0011, 0.0054, -0.0071], total: playlists.length })}
+								scale={5.0041}
+							/>
+						)
+					})}
+				</Instances>
+				<Instances frustumCulled={false} geometry={nodes.TVSCREEN.geometry}>
+					<shaderMaterial
+						fragmentShader={frag}
+						glslVersion="300 es"
+						key={hoveredParticle ?? 0}
+						ref={shaderMaterial}
+						uniforms={{
+							uHoverColor: new Uniform(new Color("#ffff00")),
+							uHoveredParticleArray: new Uniform(new Float32Array(new Array(500).fill(0))),
+							uResolution: new Uniform(new Vector2(window.innerWidth, window.innerHeight)),
+							uTextureArray: new Uniform(textureArray),
+							uTime: new Uniform(0)
+						}}
+						vertexShader={vert}
+					/>
+					{playlistsWithImages.map((p, i) => {
+						return <InstancedScreenMaterial index={i} key={`tv-screen-instance-${i}`} playlist={p} playlistCount={playlists.length} />
+					})}
+				</Instances>
+				<Instances frustumCulled={false} geometry={nodes.TVSCREENBEZEL.geometry} material={materials["TV_Chayka-206"]}>
+					{playlistsWithImages.map((p, i) => {
+						return (
+							<Instance
+								key={`tv-bezel-instance-${i}`}
+								position={getInstancePosition({ index: i, offsets: [-0.4388, 1.2966, 0.8396], total: playlists.length })}
+								scale={[5.1008, 5.1032, 4.9647]}
+							/>
+						)
+					})}
+				</Instances>
+			</group>
 		</group>
 	)
 }

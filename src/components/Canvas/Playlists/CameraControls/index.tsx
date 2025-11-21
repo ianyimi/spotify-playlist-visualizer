@@ -15,7 +15,7 @@ export default function CameraControls() {
 
 	useFramerate(30, () => {
 		if (sceneStatus !== SCENE_STATUSES.open) { return }
-		const velocity = 0.75
+		const velocity = 1
 		for (const direction of cameraState.directions) {
 			switch (direction) {
 				case "left":
