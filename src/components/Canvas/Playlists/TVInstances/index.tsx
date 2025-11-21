@@ -94,6 +94,7 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 				}
 			}
 		)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [hoveredParticle])
 
 	useFramerate(30, () => {
