@@ -21,11 +21,20 @@ export const SCENE_STATUSES = {
 	open: "open",
 	opening: "opening"
 } as const
+export type PlaylistsCameraDirection = SceneStore["playlists"]["camera"]["directions"][number]
+
 export type SceneStatus = typeof SCENE_STATUSES[keyof typeof SCENE_STATUSES]
 
 interface SceneStore {
 	camera?: Camera,
 	playlists: {
+		camera: {
+			directions: ("down" | "left" | "right" | "up")[]
+			maxX: number,
+			maxY: number
+			minX: number,
+			minY: number,
+		}
 		materialBlend: SpringValue<number>
 		sceneBlend: SpringValue<number>
 		sceneStatus: SceneStatus;
@@ -35,6 +44,13 @@ interface SceneStore {
 
 export const $sceneStore = observable<SceneStore>({
 	playlists: {
+		camera: {
+			directions: [],
+			maxX: 0,
+			maxY: 0,
+			minX: 0,
+			minY: 0
+		},
 		materialBlend: new SpringValue(0, {
 			config: {
 				duration: 1500,
@@ -59,7 +75,10 @@ interface SceneStoreActions {
 	animatePlaylistsSceneBlend: (props?: SpringUpdate<number>) => Promise<void>
 	getPlaylistsMaterialBlendValue: () => number
 	getPlaylistsSceneBlendValue: () => number
+	pushPlaylistsCameraDirection: (direction: PlaylistsCameraDirection) => void
+	removePlaylistsCameraDirection: (direction: PlaylistsCameraDirection) => void
 	setCamera: (camera: Camera) => void
+	setPlaylistsCameraBounds: ({ maxX, maxY, minX, minY }: { maxX: number, maxY: number; minX: number, minY: number, }) => void
 	setPlaylistsSceneStatus: (status: SceneStatus) => void
 	setSceneReady: () => void
 }
@@ -86,8 +105,24 @@ export const $sceneStoreActions = observable<SceneStoreActions>({
 	getPlaylistsSceneBlendValue: () => {
 		return $sceneStore.playlists.sceneBlend.get().get()
 	},
+	pushPlaylistsCameraDirection: (direction) => {
+		if ($sceneStore.playlists.camera.directions.peek().find((d) => d === direction)) { return }
+		$sceneStore.playlists.camera.directions.push(direction)
+	},
+	removePlaylistsCameraDirection: (direction) => {
+		$sceneStore.playlists.camera.directions.set($sceneStore.playlists.camera.directions.peek().filter((d) => d !== direction))
+	},
 	setCamera: (camera: Camera) => {
 		$sceneStore.camera.set(camera)
+	},
+	setPlaylistsCameraBounds: ({ maxX, maxY, minX, minY }) => {
+		$sceneStore.playlists.camera.set({
+			directions: $sceneStore.playlists.camera.directions.get(),
+			maxX,
+			maxY,
+			minX,
+			minY
+		})
 	},
 	setPlaylistsSceneStatus: (status) => {
 		$sceneStore.playlists.sceneStatus.set(status)
