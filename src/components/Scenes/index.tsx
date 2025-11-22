@@ -40,6 +40,10 @@ export default function InitialScene(props: GroupProps) {
 	const cameraPos = useRef(new Vector3())
 	const initialGroupPosition = useRef(new Vector3())
 	const savedInitialGroupPos = useRef(false)
+	const savedInitialAltScenePos = useRef(false)
+	const hasRepositionedForClosing = useRef(false)
+	const freezePortalMatrix = useRef(false)
+	const propsPositionOffset = useRef(new Vector3())
 	const screenMesh = useRef<Mesh>(null)
 	const screenQuadCopyRef = useRef(new FullScreenQuad(new ShaderMaterial({
 		uniforms: {
@@ -47,12 +51,13 @@ export default function InitialScene(props: GroupProps) {
 		}
 	})))
 	const groupRef = useRef<Group>(null)
+	const altSceneRef = useRef<Group>(null)
 	const portalMaterialRef = useRef<ThreeElements["transitionMaterial"]>(null!)
 
 	const sceneStoreActions = useValue($sceneStoreActions)
 
 	useFramerate(30, () => {
-		if (!groupRef.current) { return }
+		if (!groupRef.current || !altSceneRef.current) { return }
 
 		// Update blend uniforms
 		const sceneBlend = sceneStoreActions.getPlaylistsSceneBlendValue()
@@ -67,19 +72,49 @@ export default function InitialScene(props: GroupProps) {
 
 		// Read status directly without triggering re-renders
 		const playlistsSceneStatus = $sceneStore.playlists.sceneStatus.peek()
+		// Calculate target position: initial camera + animation offset + props offset
+		const targetVector = new Vector3(
+			cameraPos.current.x + 0.15 + propsPositionOffset.current.x,
+			cameraPos.current.y + propsPositionOffset.current.y,
+			cameraPos.current.z + 1 + propsPositionOffset.current.z
+		)
+
 		if (playlistsSceneStatus === "opening") {
+			hasRepositionedForClosing.current = false
+			freezePortalMatrix.current = false
 			if (groupRef.current.position.z >= 3.0) {
 				return sceneStoreActions.setPlaylistsSceneStatus("open")
 			}
-			const targetVector = cameraPos.current.add(new Vector3(0.15, 0, 1))
-			groupRef.current.position.lerp(targetVector, 0.001)
+			groupRef.current.position.lerp(targetVector, 0.0075)
 			return;
 		}
 		if (playlistsSceneStatus === "closing") {
-			if (groupRef.current.position.z <= 0) {
+			// Position group in front of camera at current position once
+			if (!hasRepositionedForClosing.current) {
+				// CRITICAL: Freeze portal matrix BEFORE moving the TV
+				freezePortalMatrix.current = true
+
+				const currentCameraPos = camera.position
+				// Position TV in front of current camera at the "open" z depth
+				groupRef.current.position.set(
+					currentCameraPos.x + 0.15 + propsPositionOffset.current.x,
+					currentCameraPos.y + propsPositionOffset.current.y,
+					3.0  // The z position when scene is "open"
+				)
+				// Also position the alt scene (Spotify logo) to align with camera
+				altSceneRef.current.position.set(currentCameraPos.x, currentCameraPos.y, 0)
+				hasRepositionedForClosing.current = true
+			}
+
+			// Check if we've reached the initial z position
+			if (groupRef.current.position.z <= initialGroupPosition.current.z) {
+				// Unfreeze portal matrix when animation completes
+				freezePortalMatrix.current = false
 				return sceneStoreActions.setPlaylistsSceneStatus("closed")
 			}
-			groupRef.current.position.lerp(initialGroupPosition.current, 0.015)
+
+			// Only lerp the z position back, keep x and y locked
+			groupRef.current.position.z = groupRef.current.position.z - (groupRef.current.position.z - initialGroupPosition.current.z) * 0.015
 			return
 		}
 	})
@@ -88,13 +123,38 @@ export default function InitialScene(props: GroupProps) {
 		if (!groupRef.current || savedInitialGroupPos.current) {
 			return
 		}
+		if (!$sceneStore.signInGroupId.peek()) {
+			sceneStoreActions.setSignInGroupId(groupRef.current.id)
+		}
 		initialGroupPosition.current.copy(groupRef.current.position)
+
+		// Store props.position offset for use in animations
+		if (props.position) {
+			if (props.position instanceof Vector3) {
+				propsPositionOffset.current.copy(props.position)
+			} else if (Array.isArray(props.position)) {
+				propsPositionOffset.current.set(props.position[0], props.position[1], props.position[2])
+			}
+		}
+
 		savedInitialGroupPos.current = true
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [groupRef])
 
 	useEffect(() => {
+		if (!altSceneRef.current || savedInitialAltScenePos.current) {
+			return
+		}
+		if (!$sceneStore.altSceneGroupId.peek()) {
+			sceneStoreActions.setAltSceneGroupId(altSceneRef.current.id)
+		}
+		savedInitialAltScenePos.current = true
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [altSceneRef])
+
+	useEffect(() => {
 		if (!camera) { return }
-		if (!$sceneStore.camera.get()) {
+		if (!$sceneStore.camera.peek()) {
 			sceneStoreActions.setCamera(camera)
 		}
 		cameraPos.current.copy(camera.position)
@@ -107,7 +167,7 @@ export default function InitialScene(props: GroupProps) {
 			<mesh geometry={nodes.TVSCREEN.geometry} position={[-0.0011, 0.0054, -0.0071]} ref={screenMesh} scale={5.0809}>
 				<PortalMaterial
 					altScene={
-						<group>
+						<group ref={altSceneRef}>
 							<SpotifyLogo position={[-0.35, 0, 1]} scale={0.85} />
 							<ambientLight intensity={1} />
 							<directionalLight intensity={1} position={[5, 5, 5]} />
@@ -117,6 +177,7 @@ export default function InitialScene(props: GroupProps) {
 					blend={0}
 					blur={0.2}
 					fragmentShader={frag}
+					freezePortalMatrix={freezePortalMatrix}
 					ref={portalMaterialRef}
 					resolution={1024 as PortalProps["resolution"]}
 					screenQuadCopyRef={screenQuadCopyRef}

@@ -56,6 +56,9 @@ export type PortalProps = ThreeElements["transitionMaterial"] & {
 	/** Optionally diable events inside the portal, defaults to false */
 	events?: boolean
 
+	/** Freeze the portal matrix to prevent it from following parent transforms */
+	freezePortalMatrix?: MutableRefObject<boolean>
+
 	/** Optional render priority, defaults to 0 */
 	renderPriority?: number
 
@@ -79,6 +82,7 @@ export type PortalProps = ThreeElements["transitionMaterial"] & {
 function ManagePortalScene({
 	events = undefined,
 	fragmentShader,
+	freezePortalMatrix,
 	glslVersion,
 	material,
 	rootScene,
@@ -90,6 +94,7 @@ function ManagePortalScene({
 }: {
 	events?: boolean;
 	fragmentShader?: string;
+	freezePortalMatrix?: MutableRefObject<boolean>;
 	glslVersion?: GLSLVersion;
 	material: MutableRefObject<ThreeElements['transitionMaterial']>
 	rootScene: Scene;
@@ -103,6 +108,8 @@ function ManagePortalScene({
 	const setEvents = useThree((state) => state.setEvents)
 	const buffer1 = useFBO()
 	const buffer2 = useFBO()
+	const frozenMatrixWorld = useRef(scene.matrixWorld.clone())
+	const hasFrozen = useRef(false)
 
 	useLayoutEffect(() => {
 		scene.matrixAutoUpdate = false
@@ -165,13 +172,29 @@ function ManagePortalScene({
 		const shouldRender = shouldRenderRef.current
 
 		if (parent) {
+			// Check if we should freeze the portal matrix
+			if (freezePortalMatrix?.current && !hasFrozen.current) {
+				// Freeze the current matrixWorld before parent moves
+				frozenMatrixWorld.current.copy(scene.matrixWorld)
+				hasFrozen.current = true
+			} else if (!freezePortalMatrix?.current && hasFrozen.current) {
+				// Unfreeze when boolean is set back to false
+				hasFrozen.current = false
+			}
+
 			// Move portal contents along with the parent if worldUnits is true
 			if (!worldUnits) {
 				// If the portal renders exclusively the original scene needs to be updated
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
 				if (shouldRender && sceneBlend === 1) { parent.updateWorldMatrix(true, false) }
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-				scene.matrixWorld.copy(parent.matrixWorld)
+
+				// Use frozen matrix if available, otherwise copy from parent
+				if (hasFrozen.current) {
+					scene.matrixWorld.copy(frozenMatrixWorld.current)
+				} else {
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+					scene.matrixWorld.copy(parent.matrixWorld)
+				}
 			} else { scene.matrixWorld.identity() }
 
 			// This bit is only necessary if the portal is blended, now it has a render-priority
@@ -207,6 +230,7 @@ function PortalMaterial({
 	children,
 	eventPriority = 0,
 	events = undefined,
+	freezePortalMatrix,
 	glslVersion,
 	ref,
 	renderPriority = 0,
@@ -339,6 +363,7 @@ function PortalMaterial({
 				<ManagePortalScene
 					events={events}
 					fragmentShader={transitionFragmentShader}
+					freezePortalMatrix={freezePortalMatrix}
 					glslVersion={glslVersion ?? "100"}
 					material={ref}
 					rootScene={scene}

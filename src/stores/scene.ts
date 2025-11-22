@@ -26,6 +26,7 @@ export type PlaylistsCameraDirection = SceneStore["playlists"]["camera"]["direct
 export type SceneStatus = typeof SCENE_STATUSES[keyof typeof SCENE_STATUSES]
 
 interface SceneStore {
+	altSceneGroupId: null | number
 	camera?: Camera,
 	playlists: {
 		camera: {
@@ -40,9 +41,11 @@ interface SceneStore {
 		sceneStatus: SceneStatus;
 	},
 	sceneReady: boolean;
+	signInGroupId: null | number
 }
 
 export const $sceneStore = observable<SceneStore>({
+	altSceneGroupId: null,
 	playlists: {
 		camera: {
 			directions: [],
@@ -68,6 +71,7 @@ export const $sceneStore = observable<SceneStore>({
 		sceneStatus: SCENE_STATUSES.closed,
 	},
 	sceneReady: false,
+	signInGroupId: null
 });
 
 interface SceneStoreActions {
@@ -77,10 +81,12 @@ interface SceneStoreActions {
 	getPlaylistsSceneBlendValue: () => number
 	pushPlaylistsCameraDirection: (direction: PlaylistsCameraDirection) => void
 	removePlaylistsCameraDirection: (direction: PlaylistsCameraDirection) => void
+	setAltSceneGroupId: (id: number) => void
 	setCamera: (camera: Camera) => void
 	setPlaylistsCameraBounds: ({ maxX, maxY, minX, minY }: { maxX: number, maxY: number; minX: number, minY: number, }) => void
 	setPlaylistsSceneStatus: (status: SceneStatus) => void
 	setSceneReady: () => void
+	setSignInGroupId: (id: number) => void
 }
 
 export const $sceneStoreActions = observable<SceneStoreActions>({
@@ -112,6 +118,9 @@ export const $sceneStoreActions = observable<SceneStoreActions>({
 	removePlaylistsCameraDirection: (direction) => {
 		$sceneStore.playlists.camera.directions.set($sceneStore.playlists.camera.directions.peek().filter((d) => d !== direction))
 	},
+	setAltSceneGroupId: (id) => {
+		$sceneStore.altSceneGroupId.set(id)
+	},
 	setCamera: (camera: Camera) => {
 		$sceneStore.camera.set(camera)
 	},
@@ -129,6 +138,9 @@ export const $sceneStoreActions = observable<SceneStoreActions>({
 	},
 	setSceneReady: () => {
 		$sceneStore.sceneReady.set(true)
+	},
+	setSignInGroupId: (id) => {
+		$sceneStore.signInGroupId.set(id)
 	}
 })
 
