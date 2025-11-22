@@ -41,10 +41,8 @@ export default function SpotifyLogo({ ...groupProps }: GroupProps & { rotate?: b
 	useFramerate(30, () => {
 		if (!groupRef.current || !auth?.session) { return }
 		if (playlistsSceneStatus === "closing") {
-			console.log('closing...')
 			groupRef.current.rotation.z = 0
 		} else {
-			console.log('loading...')
 			groupRef.current.rotation.z -= 0.025
 		}
 	})

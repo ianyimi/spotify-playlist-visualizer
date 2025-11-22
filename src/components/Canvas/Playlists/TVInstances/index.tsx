@@ -52,9 +52,9 @@ export default function InstancedVintageTelevision({ ...groupProps }: Partial<In
 	const shaderMaterial = useRef<ShaderMaterial>(null)
 	const innerGroupRef = useRef<Group>(null)
 
-	useTrackHoveredInstance({ count: playlists.length, groupRef: innerGroupRef })
-
 	const playlistsWithImages = playlists.filter((p) => p.images !== null && p.images.length > 0)
+
+	useTrackHoveredInstance({ count: playlistsWithImages.length, groupRef: innerGroupRef })
 
 	const textureArray = usePlaylistsTextureArray(playlists)
 
