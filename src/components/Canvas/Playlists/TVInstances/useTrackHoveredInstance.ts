@@ -109,12 +109,12 @@ export function useTrackHoveredInstance({ count, groupRef }: { count: number, gr
 		}
 	})
 
-	useEffect(() => {
-		const body = document.body
-		if (hoveredPlaylist && body.style.cursor !== "pointer") {
-			body.style.cursor = "pointer"
-		} else if (!hoveredPlaylist && body.style.cursor === "pointer") {
-			body.style.cursor = "default"
-		}
-	}, [hoveredPlaylist])
+	// useEffect(() => {
+	// 	const body = document.body
+	// 	if (hoveredPlaylist && body.style.cursor !== "pointer") {
+	// 		body.style.cursor = "pointer"
+	// 	} else if (!hoveredPlaylist && body.style.cursor === "pointer") {
+	// 		body.style.cursor = "default"
+	// 	}
+	// }, [hoveredPlaylist])
 }
