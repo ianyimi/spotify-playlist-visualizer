@@ -4,8 +4,8 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import SceneLoader from "~/components/Canvas/SceneLoader";
-import ClientProviders from "~/components/Providers/client";
-import ServerProviders from "~/components/Providers/server";
+import ClientProviders from "~/components/Dom/Providers/client";
+import ServerProviders from "~/components/Dom/Providers/server";
 
 export const metadata: Metadata = {
 	description: "Spotify Playlist Visualizer",

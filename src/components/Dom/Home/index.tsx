@@ -9,8 +9,8 @@ import { useEffect } from "react";
 import type { UserID } from "~/convex/types";
 
 import { useSession } from "~/auth/client";
-import SignInButton from "~/components/auth/SignIn";
 import Dom from "~/components/Dom"
+import SignInButton from "~/components/Dom/auth/SignIn";
 import { api } from "~/convex/_generated/api";
 import { $spotifyStore, $spotifyStoreActions } from "~/stores/spotify";
 

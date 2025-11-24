@@ -232,7 +232,7 @@ function PortalMaterial({
 	events = undefined,
 	freezePortalMatrix,
 	glslVersion,
-	ref,
+	ref: refProp,
 	renderPriority = 0,
 	resolution = 512 as PortalProps["resolution"],
 	screenQuadCopyRef,
@@ -243,6 +243,9 @@ function PortalMaterial({
 	worldUnits = false,
 	...shaderProps
 }: PortalProps) {
+	// Handle ref being either a callback or RefObject
+	const nullRef = useRef<ThreeElements['transitionMaterial']>(null) as MutableRefObject<ThreeElements['transitionMaterial']>
+	const ref = typeof refProp === 'function' ? nullRef : refProp as MutableRefObject<ThreeElements['transitionMaterial']>
 
 	const { camera, gl, scene, setEvents, size, viewport } = useThree()
 	const maskRenderTarget = useFBO(resolution, resolution)
@@ -275,7 +278,7 @@ function PortalMaterial({
 	}, [])
 
 	useLayoutEffect(() => {
-		if (!parent.current) { return }
+		if (!parent.current || !ref.current || !resolution) { return }
 
 		// Apply the SDF mask only once
 		if (blur && ref.current.sdf === null) {
@@ -319,7 +322,7 @@ function PortalMaterial({
 	}, [resolution, blur])
 
 	// @ts-expect-error copied from drei src
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const compute = useCallback((event, state, previous) => {
 		if (!parent.current || !ref.current?.uniforms) { return false }
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access

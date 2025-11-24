@@ -12,7 +12,7 @@ import { cn } from "~/styles/utils"
 const Scene = lazy(() => import("./Scene"))
 
 // Dynamically import LoadingLogo with no SSR to avoid hydration issues
-const LoadingLogo = dynamic(() => import("~/components/common/LoadingLogo"), {
+const LoadingLogo = dynamic(() => import("~/components/Dom/common/LoadingLogo"), {
 	ssr: false
 })
 

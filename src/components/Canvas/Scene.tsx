@@ -6,8 +6,8 @@ import { useEffect, useState } from "react"
 import * as THREE from "three"
 import { Vector3 } from "three"
 
-import InitialScene from "../Scenes"
 import CameraShake from "./CameraShake"
+import InitialScene from "./Scenes"
 
 // Extend THREE with necessary geometries - this fixes Text3D issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
