@@ -1,5 +1,6 @@
 import "~/styles/globals.css";
 
+import { GoogleTagManager } from "@next/third-parties/google"
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
@@ -106,6 +107,7 @@ export default function RootLayout({
 					name="msapplication-TileImage"
 				/>
 			</head>
+			<GoogleTagManager gtmId="G-MLB6YTFB33" />
 			<body className="bg-[#15160c]">
 				<ServerProviders>
 					<ClientProviders>
